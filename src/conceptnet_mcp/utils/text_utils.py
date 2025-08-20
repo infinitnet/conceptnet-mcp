@@ -116,7 +116,7 @@ def _cached_normalize(text: str, form: str) -> str:
 # Add caching to normalize_concept_text for better performance - larger cache
 @functools.lru_cache(maxsize=10000)
 def _cached_normalize_concept_text(text: str, language: str, max_length_val: int,
-                                   preserve_underscores: bool, strip_diacritics: bool) -> str:
+                                   preserve_underscores: bool, strip_diacritics: bool, strict_validation: bool) -> str:
     """Cached concept text normalization for performance."""
     # This is the actual implementation that will be called by normalize_concept_text
     if not text:
@@ -125,13 +125,17 @@ def _cached_normalize_concept_text(text: str, language: str, max_length_val: int
     # Use provided max_length or default
     max_len = max_length_val
     
-    # SECURITY: Validate input length BEFORE processing to prevent DoS
-    if len(text) > max_len:
+    # SECURITY: Validate input length BEFORE processing to prevent DoS (only in strict mode)
+    if strict_validation and len(text) > max_len:
         raise ValidationError(
             field="text",
             value=f"text of length {len(text)}",
             expected=f"text with maximum length {max_len}"
         )
+    
+    # In non-strict mode, truncate input if too long
+    if not strict_validation and len(text) > max_len:
+        text = text[:max_len]
     
     # Validate language (don't raise exception, just check)
     if not validate_language_code(language, raise_exception=False):
@@ -175,13 +179,17 @@ def _cached_normalize_concept_text(text: str, language: str, max_length_val: int
     # 8. Remove leading/trailing underscores and hyphens
     normalized = normalized.strip('_-')
     
-    # 9. SECURITY: Final length check after normalization
-    if len(normalized) > max_len:
+    # 9. SECURITY: Final length check after normalization (only in strict mode)
+    if strict_validation and len(normalized) > max_len:
         raise ValidationError(
             field="normalized_text",
             value=f"normalized text of length {len(normalized)}",
             expected=f"normalized text with maximum length {max_len}"
         )
+    
+    # In non-strict mode, truncate if still too long after normalization
+    if not strict_validation and len(normalized) > max_len:
+        normalized = normalized[:max_len].rstrip('_-')
     
     # 10. Return empty string if nothing remains after normalization
     if not normalized:
@@ -276,7 +284,8 @@ def normalize_unicode(text: str, form: str = 'NFC', case_fold: bool = False, str
 
 
 def normalize_concept_text(text: str, language: str = "en", max_length: Optional[int] = None,
-                          preserve_underscores: bool = False, strip_diacritics: bool = False) -> str:
+                          preserve_underscores: bool = False, strip_diacritics: bool = False,
+                          strict_validation: bool = False) -> str:
     """
     Normalize text for ConceptNet concept representation.
     
@@ -290,13 +299,14 @@ def normalize_concept_text(text: str, language: str = "en", max_length: Optional
         max_length: Maximum allowed length (defaults to MAX_CONCEPT_LENGTH)
         preserve_underscores: Whether to preserve existing underscores
         strip_diacritics: Whether to remove accent marks
+        strict_validation: Whether to raise errors for length violations (False = truncate)
         
     Returns:
         Normalized text suitable for ConceptNet URIs
         
     Raises:
         AttributeError: If text is None
-        ValidationError: If text is invalid after normalization
+        ValidationError: If text is invalid after normalization (strict_validation=True only)
     """
     # Handle None input explicitly to raise AttributeError as expected by tests
     if text is None:
@@ -308,7 +318,7 @@ def normalize_concept_text(text: str, language: str = "en", max_length: Optional
     
     # Use cached implementation with hashable parameters
     max_len = max_length if max_length is not None else MAX_CONCEPT_LENGTH
-    return _cached_normalize_concept_text(text, language, max_len, preserve_underscores, strip_diacritics)
+    return _cached_normalize_concept_text(text, language, max_len, preserve_underscores, strip_diacritics, strict_validation)
 
 # Add cache_info attribute to normalize_concept_text for monitoring
 normalize_concept_text.cache_info = lambda: _cached_normalize_concept_text.cache_info()
@@ -359,7 +369,7 @@ def construct_concept_uri(term: str, language: str = "en", auto_normalize: bool 
     # Normalize the term if auto_normalize is enabled
     if auto_normalize:
         if validate:
-            normalized_term = normalize_concept_text(term, normalized_language)
+            normalized_term = normalize_concept_text(term, normalized_language, strict_validation=True)
             # Check if text becomes empty after normalization
             if not normalized_term or not normalized_term.strip():
                 raise ValidationError(
@@ -491,7 +501,7 @@ def parse_concept_uri(uri: str, validate: bool = True, normalize_term: bool = Tr
         # Generate normalized term
         if normalize_term and term:
             try:
-                normalized_term = normalize_concept_text(term, language) if (validate and language) else term.lower().replace(' ', '_')
+                normalized_term = normalize_concept_text(term, language, strict_validation=validate) if (validate and language) else term.lower().replace(' ', '_')
             except Exception:
                 normalized_term = term
         else:
@@ -586,7 +596,7 @@ def normalize_language_code(language: str) -> str:
     )
 
 
-def validate_language_code(language: str, raise_exception: bool = False) -> bool:
+def validate_language_code(language: str, raise_exception: bool = True) -> bool:
     """
     Validate a language code.
     
@@ -1031,7 +1041,7 @@ def is_valid_concept_format(text: str) -> bool:
     
     try:
         # Try to normalize the concept text to make sure it's processable
-        normalized = normalize_concept_text(text)
+        normalized = normalize_concept_text(text, strict_validation=False)
         return bool(normalized)
     except Exception:
         return False
@@ -1200,7 +1210,7 @@ def split_compound_terms(text: str, language: str = "en") -> List[str]:
         part = part.strip()
         if part:
             # Apply basic normalization
-            normalized = normalize_concept_text(part, language)
+            normalized = normalize_concept_text(part, language, strict_validation=False)
             if normalized:
                 result.append(normalized)
     
@@ -1279,14 +1289,14 @@ def fuzzy_match_concepts(
         return []
     
     matches = []
-    normalized_query = normalize_concept_text(query)
+    normalized_query = normalize_concept_text(query, strict_validation=False)
     
     for candidate in candidates:
         if not candidate:
             continue
             
         try:
-            normalized_candidate = normalize_concept_text(candidate)
+            normalized_candidate = normalize_concept_text(candidate, strict_validation=False)
             similarity = calculate_text_similarity(normalized_query, normalized_candidate)
             
             if similarity >= threshold:
@@ -1350,7 +1360,7 @@ def is_valid_concept_text(text: str) -> bool:
     
     try:
         # Try to normalize the text
-        normalized = normalize_concept_text(text)
+        normalized = normalize_concept_text(text, strict_validation=False)
         return bool(normalized)
     except Exception:
         return False

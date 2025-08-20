@@ -120,7 +120,7 @@ class ProductionValidator:
         print("🔒 Testing DoS prevention...")
         try:
             very_long_text = "A" * 1000  # Use smaller test size
-            normalize_concept_text(very_long_text)
+            normalize_concept_text(very_long_text, strict_validation=True)
             print("❌ Length limit not enforced")
             self.failed += 1
         except ValidationError:
@@ -323,7 +323,7 @@ class ProductionValidator:
         degradation_tests = [
             # Function should handle None gracefully
             (lambda: normalize_concept_text("") or "fallback", "Empty text handling"),
-            (lambda: validate_language_code("invalid") is False, "Invalid language handling"),
+            (lambda: validate_language_code("invalid", raise_exception=False) is False, "Invalid language handling"),
             (lambda: is_valid_concept_text("") is False, "Invalid concept handling"),
         ]
         
