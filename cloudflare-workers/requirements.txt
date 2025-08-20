@@ -1,0 +1,19 @@
+# Core dependencies for Cloudflare Workers Python deployment
+# Minimal set optimized for Workers Python runtime
+
+# FastAPI framework - core HTTP and API functionality  
+fastapi>=0.104.0,<1.0.0
+
+# Data validation and settings management
+pydantic>=2.5.0,<3.0.0
+
+# ASGI server support for FastAPI (Workers compatible)
+uvicorn[standard]>=0.24.0,<1.0.0
+
+# Workers-specific notes:
+# - fastmcp removed (not available in Workers Python runtime)
+# - httpx replaced with native fetch() API in CloudflareHTTPClient
+# - Local path dependency (-e ../../) removed (not supported)
+# - Only packages available in Workers Python runtime included
+# - asyncio, json, urllib.parse, typing are standard library
+# - pyodide.ffi and js modules are provided by Workers runtime

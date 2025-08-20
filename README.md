@@ -114,6 +114,84 @@ const client = new MCPClient('http://localhost:3001');
 await client.connect();
 ```
 
+## ☁️ Cloudflare Workers Deployment
+
+Deploy ConceptNet MCP Server to Cloudflare's global edge network for worldwide access and automatic scaling using a **FastAPI-based implementation** optimized for Python Workers.
+
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/infinitnet/conceptnet-mcp)
+
+### Architecture
+
+The Cloudflare Workers deployment uses a **completely different architecture** from the standard FastMCP server:
+
+- **FastAPI Framework**: Manual MCP protocol implementation using FastAPI for HTTP routing
+- **Standard Workers Pattern**: Uses `fetch(request, env, ctx)` handler (no Durable Objects)
+- **Native HTTP Client**: Custom `CloudflareHTTPClient` using Workers' native `fetch()` API
+- **Manual MCP Protocol**: JSON-RPC 2.0 MCP messages handled directly without FastMCP framework
+
+### Benefits
+
+- 🌍 **Global Edge Network**: Low-latency access worldwide via Cloudflare's CDN
+- 🚀 **Auto-scaling**: Serverless scaling based on demand with zero cold starts
+- 🔄 **Dual Transport Support**: Both SSE and Streamable HTTP endpoints for maximum compatibility
+- 🤖 **Remote MCP Access**: Enable AI agents to access ConceptNet from anywhere
+- 💰 **Cost-effective**: Pay only for actual usage with generous free tier
+
+### Quick Deploy
+
+```bash
+# Clone and navigate to Workers directory
+git clone https://github.com/infinitnet/conceptnet-mcp.git
+cd conceptnet-mcp/cloudflare-workers
+
+# Install Wrangler CLI
+npm install -g wrangler
+
+# Authenticate and deploy
+wrangler login
+wrangler deploy
+```
+
+### Usage After Deployment
+
+Your ConceptNet MCP Server will be available at:
+
+```
+# Streamable HTTP Transport (recommended for MCP clients)
+https://your-worker.your-domain.workers.dev/mcp
+
+# SSE Transport (legacy support)
+https://your-worker.your-domain.workers.dev/sse
+
+# Tools listing endpoint
+https://your-worker.your-domain.workers.dev/tools
+```
+
+**Example remote client connection (direct HTTP):**
+```python
+import httpx
+import json
+
+# Connect to your deployed Workers instance
+async with httpx.AsyncClient() as client:
+    response = await client.post(
+        "https://your-worker.your-domain.workers.dev/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "concept_lookup",
+                "arguments": {"term": "artificial intelligence"}
+            }
+        }
+    )
+    result = response.json()
+    print(result["result"])
+```
+
+For detailed deployment instructions, configuration options, and troubleshooting, see the [Cloudflare Workers Documentation](cloudflare-workers/README.md).
+
 ## Available Tools
 
 ### 1. Concept Lookup

@@ -1,0 +1,46 @@
+name = "conceptnet-mcp-server"
+main = "src/main.py"
+compatibility_date = "2025-08-20"
+compatibility_flags = ["python_workers"]
+
+# Python Workers configuration
+[build]
+command = ""
+
+# Environment variables
+[vars]
+CONCEPTNET_API_URL = "http://api.conceptnet.io"
+MCP_SERVER_NAME = "ConceptNet MCP Server"
+LOG_LEVEL = "INFO"
+
+# Development environment variables
+[env.development.vars]
+LOG_LEVEL = "DEBUG"
+CONCEPTNET_API_URL = "http://api.conceptnet.io"
+
+# Production environment variables  
+[env.production.vars]
+LOG_LEVEL = "INFO"
+CONCEPTNET_API_URL = "https://api.conceptnet.io"
+
+# Routes for dual transport support
+# Uncomment and update with your domain after deployment
+# [[routes]]
+# pattern = "*/mcp"
+# zone_name = "your-domain.com"
+
+# [[routes]]
+# pattern = "*/sse"
+# zone_name = "your-domain.com"
+
+# [[routes]]
+# pattern = "*/tools"
+# zone_name = "your-domain.com"
+
+# Resource limits for Python Workers
+[limits]
+cpu_ms = 30000
+
+# Note: Durable Objects configuration removed as they are not supported in Python Workers
+# The implementation now uses standard fetch handler with FastAPI for HTTP routing
+# and manual MCP protocol implementation compatible with Workers runtime
