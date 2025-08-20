@@ -371,7 +371,8 @@ class InvalidConceptURIError(ConceptNetMCPError):
         uri: str,
         expected_format: Optional[str] = None,
         uri_parts: Optional[Dict[str, str]] = None,
-        validation_errors: Optional[List[str]] = None
+        validation_errors: Optional[List[str]] = None,
+        reason: Optional[str] = None
     ):
         message = f"Invalid concept URI: '{uri}'"
         if expected_format:
@@ -387,6 +388,14 @@ class InvalidConceptURIError(ConceptNetMCPError):
         if expected_format is None:
             expected_format = "/c/{language}/{term} or /r/{relation}"
         
+        # Handle the reason parameter logic
+        final_validation_errors = validation_errors or []
+        if reason:
+            if validation_errors is None:
+                final_validation_errors = [reason]
+            else:
+                final_validation_errors.append(reason)
+        
         super().__init__(
             message=message,
             error_code=ErrorCode.CONCEPT_URI_INVALID,
@@ -396,7 +405,7 @@ class InvalidConceptURIError(ConceptNetMCPError):
         self.uri = uri
         self.expected_format = expected_format
         self.uri_parts = uri_parts or {}
-        self.validation_errors = validation_errors or []
+        self.validation_errors = final_validation_errors
         
         # Add URI-specific context
         self.add_context('invalid_uri', uri)
