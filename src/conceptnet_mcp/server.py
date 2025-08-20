@@ -8,6 +8,7 @@ knowledge graph through four powerful MCP tools.
 
 import asyncio
 from typing import Any, Dict, Optional
+import fastmcp
 from fastmcp import FastMCP, Context
 
 # Import all tool implementations
@@ -406,6 +407,13 @@ def main(transport: str = "stdio", host: str = "localhost", port: int = 3001) ->
     """
     logger.info(f"🎯 Starting ConceptNet MCP Server with {transport} transport...")
     
+    # Log FastMCP version for diagnostic purposes
+    try:
+        fastmcp_version = getattr(fastmcp, '__version__', 'unknown')
+        logger.info(f"📦 Using FastMCP version: {fastmcp_version}")
+    except Exception as e:
+        logger.warning(f"⚠️  Could not determine FastMCP version: {e}")
+    
     try:
         # Run startup handler
         asyncio.run(startup_handler())
@@ -417,15 +425,13 @@ def main(transport: str = "stdio", host: str = "localhost", port: int = 3001) ->
             mcp.run(
                 transport="http",
                 host=host,
-                port=port,
-                show_banner=True
+                port=port
             )
         else:
             logger.info("📡 Starting stdio transport for desktop MCP clients")
             # Run the server with stdio transport (default for MCP compatibility)
             mcp.run(
-                transport="stdio",
-                show_banner=True
+                transport="stdio"
             )
         
     except KeyboardInterrupt:
