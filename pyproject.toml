@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "conceptnet-mcp"
-version = "0.2.3"
+version = "0.2.4"
 description = "A Model Context Protocol (MCP) server for ConceptNet API integration"
 readme = "README.md"
 license = {text = "GPL-3.0"}
