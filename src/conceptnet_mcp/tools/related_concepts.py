@@ -242,14 +242,17 @@ async def _create_enhanced_response(
             await ctx.warning(f"Failed to process concept data: {e}")
             continue
     
-    # Apply language filtering if specified
-    if filter_language and related_concepts:
+    # Apply language filtering (use filter_language if specified, otherwise default to same language)
+    target_lang = filter_language if filter_language is not None else language
+    
+    if target_lang and related_concepts:
         original_count = len(related_concepts)
         related_concepts = [
             concept for concept in related_concepts
-            if concept["concept"]["language"] == filter_language
+            if concept["concept"]["language"] == target_lang
         ]
-        await ctx.info(f"Language filtering applied: {original_count} -> {len(related_concepts)} concepts")
+        if len(related_concepts) != original_count:
+            await ctx.info(f"Language filtering applied ({target_lang}): {original_count} -> {len(related_concepts)} concepts")
     
     # Update similarity scores after filtering
     if related_concepts:

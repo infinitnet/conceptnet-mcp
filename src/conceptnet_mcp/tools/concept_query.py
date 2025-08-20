@@ -29,10 +29,12 @@ from ..utils.text_utils import (
 )
 
 
+from ..utils.logging import get_logger
+
+
 def create_concept_uri(term: str, language: str) -> str:
     """Create a ConceptNet URI from a term and language."""
     return construct_concept_uri(term, language)
-from ..utils.logging import get_logger
 
 
 logger = get_logger(__name__)
@@ -106,16 +108,18 @@ async def concept_query(
         await ctx.info("Processing and enhancing query results...")
         processor = ResponseProcessor(default_language=language)
         
-        # Process edges
+        # Process edges with same-language filtering by default
         edges = response.get("edges", [])
-        if language and language != "en":
-            edges = processor.filter_by_language(edges, language)
+        # Apply same-language filtering by default
+        filtered_edges = processor.filter_by_language(edges, language, require_both=True)
+        processed_edges = processor.process_edge_list(filtered_edges, target_language=language)
         
-        processed_edges = processor.process_edge_list(edges, target_language=language)
+        if len(filtered_edges) != len(edges):
+            await ctx.info(f"Applied same-language filtering ({language}): {len(edges)} → {len(filtered_edges)} edges")
         
         # 5. Create comprehensive enhanced response
         enhanced_response = await _create_enhanced_query_response(
-            processed_edges, response, validated_params, filters, 
+            processed_edges, response, validated_params, filters,
             language, limit_results, start_time, ctx
         )
         

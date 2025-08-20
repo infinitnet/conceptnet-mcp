@@ -82,19 +82,22 @@ class ResponseProcessor:
         return None
     
     def filter_by_language(
-        self, 
-        edges: List[Dict[str, Any]], 
-        target_language: str
+        self,
+        edges: List[Dict[str, Any]],
+        target_language: str,
+        require_both: bool = True
     ) -> List[Dict[str, Any]]:
         """
         Filter edges by target language.
         
-        Includes edges where either the start or end concept matches the target language.
-        This allows for cross-language relationships while filtering for relevance.
+        By default, includes edges where BOTH start and end concepts match the target language.
+        This removes cross-language edges to provide clean same-language results.
         
         Args:
             edges: List of edge dictionaries to filter
             target_language: Language code to filter by
+            require_both: If True, both concepts must match target language.
+                         If False, either concept can match (legacy behavior).
             
         Returns:
             Filtered list of edges
@@ -110,9 +113,14 @@ class ResponseProcessor:
             start_lang = self.extract_language_from_concept(start_concept)
             end_lang = self.extract_language_from_concept(end_concept)
             
-            # Include edge if either start or end matches target language
-            if start_lang == target_language or end_lang == target_language:
-                filtered.append(edge)
+            if require_both:
+                # Include edge only if BOTH start and end match target language
+                if start_lang == target_language and end_lang == target_language:
+                    filtered.append(edge)
+            else:
+                # Legacy behavior: include edge if either start or end matches target language
+                if start_lang == target_language or end_lang == target_language:
+                    filtered.append(edge)
         
         return filtered
     

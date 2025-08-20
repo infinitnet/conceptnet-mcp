@@ -85,16 +85,19 @@ async def concept_lookup(
             except ConceptNetAPIError as e:
                 return _create_api_error_response(term, language, str(e))
         
-        # 4. Process and normalize the response
+        # 4. Apply default language filtering if target_language not specified
+        effective_target_language = target_language if target_language is not None else language
+        
+        # 5. Process and normalize the response
         processor = ResponseProcessor(default_language=language)
         processed_response = processor.process_concept_response(
-            response, target_language=target_language
+            response, target_language=effective_target_language
         )
         
-        # 5. Create enhanced response with summaries and metadata
+        # 6. Create enhanced response with summaries and metadata
         enhanced_response = await _create_enhanced_response(
             processed_response, term, normalized_term, language,
-            target_language, limit_results, start_time, ctx
+            effective_target_language, limit_results, start_time, ctx
         )
         
         # Log completion
@@ -198,7 +201,7 @@ async def _create_enhanced_response(
     original_term: str,
     normalized_term: str,
     language: str,
-    target_language: Optional[str],
+    target_language: str,
     limit_results: bool,
     start_time: datetime,
     ctx: Context
@@ -249,7 +252,7 @@ async def _create_enhanced_response(
             "query_time": start_time.isoformat() + "Z",
             "total_results": len(edges),
             "pagination_used": not limit_results,
-            "language_filtered": target_language is not None,
+            "language_filtered": True,
             "original_term": original_term,
             "normalized_term": normalized_term,
             "search_language": language,
@@ -257,13 +260,12 @@ async def _create_enhanced_response(
         }
     }
     
-    # Add language filtering info if applied
-    if target_language:
-        original_count = processed_response.get("_original_edge_count", len(edges))
+    # Add language filtering info
+    original_count = processed_response.get("_original_edge_count")
+    if original_count and original_count != len(edges):
         enhanced_response["metadata"]["edges_before_filtering"] = original_count
         enhanced_response["metadata"]["edges_after_filtering"] = len(edges)
-        
-        await ctx.info(f"Language filtering applied: {original_count} -> {len(edges)} edges")
+        await ctx.info(f"Language filtering applied ({target_language}): {original_count} -> {len(edges)} edges")
     
     # Add pagination info
     if not limit_results:
