@@ -38,7 +38,7 @@ ConceptNet MCP Server supports two output formats for all tools to optimize perf
 - **Performance**: Faster processing and reduced API costs
 - **Usage**: Perfect for most AI applications and chat interfaces
 
-### Verbose Format (Legacy)
+### Verbose Format
 - **Size**: Full ConceptNet response data
 - **Content**: Complete metadata, statistics, analysis, and original API responses
 - **Usage**: Detailed analysis, debugging, or when full context is needed
