@@ -312,8 +312,14 @@ class RequestLogger:
     API requests, and error handling with proper context management.
     """
     
-    def __init__(self, logger: Optional[logging.Logger] = None):
-        self.logger = logger or get_logger("requests")
+    def __init__(self, logger_name: Optional[str] = None, logger: Optional[logging.Logger] = None):
+        # Support both logger name and logger instance for flexibility
+        if logger:
+            self.logger = logger
+        elif logger_name:
+            self.logger = get_logger(logger_name)
+        else:
+            self.logger = get_logger("requests")
         self.performance_logger = PerformanceLogger(self.logger)
     
     def set_request_context(
@@ -351,16 +357,22 @@ class RequestLogger:
             delattr(_request_context, 'performance')
     
     @contextmanager
-    def request_context(self, request_id: str, operation: str, **kwargs):
+    def request_context(self, request_id: str = None, operation: str = None, tool_name: str = None, **kwargs):
         """
         Context manager for setting request context.
         
         Args:
             request_id: Unique request identifier
-            operation: Operation being performed
+            operation: Operation being performed (deprecated, use tool_name)
+            tool_name: Name of the MCP tool being executed
             **kwargs: Additional context information
         """
-        self.set_request_context(request_id=request_id, tool_name=operation, **kwargs)
+        # Handle backward compatibility - operation maps to tool_name
+        actual_tool_name = tool_name or operation
+        if not actual_tool_name and not request_id:
+            raise ValueError("Either request_id or tool_name/operation must be provided")
+        
+        self.set_request_context(request_id=request_id, tool_name=actual_tool_name, **kwargs)
         try:
             yield
         finally:

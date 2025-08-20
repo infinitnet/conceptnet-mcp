@@ -107,16 +107,16 @@ RELATION_PATTERNS = {
     '/r/NotHasProperty': 'not has property'
 }
 
-# Cache for expensive operations
-@functools.lru_cache(maxsize=1000)
+# Cache for expensive operations - increased cache sizes for better performance
+@functools.lru_cache(maxsize=5000)
 def _cached_normalize(text: str, form: str) -> str:
     """Cached Unicode normalization for performance."""
     return unicodedata.normalize(form, text)
 
-# Add caching to normalize_concept_text for better performance
-@functools.lru_cache(maxsize=2000)
+# Add caching to normalize_concept_text for better performance - larger cache
+@functools.lru_cache(maxsize=10000)
 def _cached_normalize_concept_text(text: str, language: str, max_length_val: int,
-                                  preserve_underscores: bool, strip_diacritics: bool) -> str:
+                                   preserve_underscores: bool, strip_diacritics: bool) -> str:
     """Cached concept text normalization for performance."""
     # This is the actual implementation that will be called by normalize_concept_text
     if not text:
@@ -124,6 +124,14 @@ def _cached_normalize_concept_text(text: str, language: str, max_length_val: int
     
     # Use provided max_length or default
     max_len = max_length_val
+    
+    # SECURITY: Validate input length BEFORE processing to prevent DoS
+    if len(text) > max_len:
+        raise ValidationError(
+            field="text",
+            value=f"text of length {len(text)}",
+            expected=f"text with maximum length {max_len}"
+        )
     
     # Validate language (don't raise exception, just check)
     if not validate_language_code(language, raise_exception=False):
@@ -167,9 +175,13 @@ def _cached_normalize_concept_text(text: str, language: str, max_length_val: int
     # 8. Remove leading/trailing underscores and hyphens
     normalized = normalized.strip('_-')
     
-    # 9. Apply length limit by truncating instead of raising error
+    # 9. SECURITY: Final length check after normalization
     if len(normalized) > max_len:
-        normalized = normalized[:max_len].rstrip('_-')
+        raise ValidationError(
+            field="normalized_text",
+            value=f"normalized text of length {len(normalized)}",
+            expected=f"normalized text with maximum length {max_len}"
+        )
     
     # 10. Return empty string if nothing remains after normalization
     if not normalized:
@@ -197,6 +209,29 @@ def validate_text_length(text: str, max_length: int = MAX_TEXT_LENGTH, field_nam
             expected=f"text with maximum length {max_length}"
         )
 
+
+# Cache the Unicode normalization with parameters for better performance
+@functools.lru_cache(maxsize=5000)
+def _cached_normalize_unicode(text: str, form: str, case_fold: bool, strip_accents: bool) -> str:
+    """Cached Unicode normalization with all parameters."""
+    if not text:
+        return ""
+    
+    # Use cached normalization for performance
+    normalized = _cached_normalize(text, form)
+    
+    # Apply case folding if requested
+    if case_fold:
+        normalized = normalized.casefold()
+    
+    # Strip accents if requested
+    if strip_accents:
+        # Use NFD normalization to decompose characters, then filter out combining marks
+        decomposed = unicodedata.normalize('NFD', normalized)
+        filtered = ''.join(char for char in decomposed if unicodedata.category(char) != 'Mn')
+        normalized = unicodedata.normalize('NFC', filtered)
+    
+    return normalized
 
 def normalize_unicode(text: str, form: str = 'NFC', case_fold: bool = False, strip_accents: bool = False) -> str:
     """
@@ -231,20 +266,7 @@ def normalize_unicode(text: str, form: str = 'NFC', case_fold: bool = False, str
     
     # Use cached normalization for performance
     try:
-        normalized = _cached_normalize(text, form)
-        
-        # Apply case folding if requested
-        if case_fold:
-            normalized = normalized.casefold()
-        
-        # Strip accents if requested
-        if strip_accents:
-            # Use NFD normalization to decompose characters, then filter out combining marks
-            decomposed = unicodedata.normalize('NFD', normalized)
-            filtered = ''.join(char for char in decomposed if unicodedata.category(char) != 'Mn')
-            normalized = unicodedata.normalize('NFC', filtered)
-        
-        return normalized
+        return _cached_normalize_unicode(text, form, case_fold, strip_accents)
     except Exception as e:
         raise ValidationError(
             field="text",
@@ -564,7 +586,7 @@ def normalize_language_code(language: str) -> str:
     )
 
 
-def validate_language_code(language: str, raise_exception: bool = True) -> bool:
+def validate_language_code(language: str, raise_exception: bool = False) -> bool:
     """
     Validate a language code.
     
@@ -598,7 +620,7 @@ def validate_language_code(language: str, raise_exception: bool = True) -> bool:
             )
         return False
     
-    # Check for uppercase (should be lowercase) - tests expect this to raise exception
+    # Check for uppercase (should be lowercase) - tests expect this to raise exception when raise_exception=True
     if language != normalized:
         if raise_exception:
             raise InvalidLanguageError(
@@ -610,7 +632,7 @@ def validate_language_code(language: str, raise_exception: bool = True) -> bool:
     try:
         normalize_language_code(language)
         return True
-    except InvalidLanguageError as e:
+    except InvalidLanguageError:
         if raise_exception:
             raise
         return False
@@ -1185,7 +1207,7 @@ def split_compound_terms(text: str, language: str = "en") -> List[str]:
     return result
 
 
-@functools.lru_cache(maxsize=500)
+@functools.lru_cache(maxsize=2000)
 def calculate_text_similarity(text1: str, text2: str, method: str = "sequence") -> float:
     """
     Calculate similarity between two text strings using various algorithms.
@@ -1390,6 +1412,7 @@ def clear_text_caches():
     """Clear all text processing caches to free memory."""
     _cached_normalize.cache_clear()
     _cached_normalize_concept_text.cache_clear()
+    _cached_normalize_unicode.cache_clear()
     calculate_text_similarity.cache_clear()
 
 
@@ -1398,5 +1421,6 @@ def get_cache_info() -> Dict[str, Any]:
     return {
         'normalize_cache': _cached_normalize.cache_info()._asdict(),
         'normalize_concept_cache': _cached_normalize_concept_text.cache_info()._asdict(),
+        'normalize_unicode_cache': _cached_normalize_unicode.cache_info()._asdict(),
         'similarity_cache': calculate_text_similarity.cache_info()._asdict()
     }
