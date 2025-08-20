@@ -12,9 +12,6 @@ updates:
     commit-message:
       prefix: "deps"
       include: "scope"
-    labels:
-      - "dependencies"
-      - "python"
     open-pull-requests-limit: 5
 
   # Enable version updates for GitHub Actions
@@ -29,7 +26,4 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
-    labels:
-      - "dependencies"
-      - "github-actions"
     open-pull-requests-limit: 2
