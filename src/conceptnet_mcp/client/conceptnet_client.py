@@ -378,7 +378,7 @@ class ConceptNetClient:
         self,
         term: str,
         language: str = "en",
-        filter_language: Optional[str] = None,
+        filter_language: Optional[str] = "en",
         limit: int = 100
     ) -> Dict[str, Any]:
         """

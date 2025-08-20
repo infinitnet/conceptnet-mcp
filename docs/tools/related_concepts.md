@@ -8,9 +8,10 @@ The `related_concepts` tool finds concepts that are semantically connected to a 
 
 ```python
 async def related_concepts(
-    concept: str,
+    term: str,
     ctx: Context,
     language: str = "en",
+    filter_language: Optional[str] = "en",
     limit: int = 100,
     verbose: bool = False
 ) -> Dict[str, Any]:
@@ -20,9 +21,10 @@ async def related_concepts(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `concept` | `str` | Required | Source concept to find relationships for (e.g., "dog", "happiness") |
+| `term` | `str` | Required | Source concept to find relationships for (e.g., "dog", "happiness") |
 | `ctx` | `Context` | Required | FastMCP context for logging and progress reporting |
-| `language` | `str` | `"en"` | Language code for the concept (ISO 639-1 format) |
+| `language` | `str` | `"en"` | Language code for the input term (ISO 639-1 format) |
+| `filter_language` | `Optional[str]` | `"en"` | Language to filter results to (use None for no filtering) |
 | `limit` | `int` | `100` | Maximum number of related concepts to return (1-100) |
 | `verbose` | `bool` | `False` | Output format: `False` for minimal (LLM-optimized), `True` for full ConceptNet format |
 

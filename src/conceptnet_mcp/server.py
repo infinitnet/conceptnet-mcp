@@ -286,7 +286,7 @@ async def concept_query_tool(
     Features:
     - Semantic similarity discovery using advanced algorithms
     - Ranked results with detailed similarity analysis
-    - Language filtering and cross-language exploration
+    - Default English language filtering (can be disabled or changed)
     - Statistical analysis and categorization
     - Format control: minimal (~96% smaller) vs verbose (full metadata)
     
@@ -313,7 +313,7 @@ async def related_concepts_tool(
     term: str,
     ctx: Context,
     language: str = "en",
-    filter_language: Optional[str] = None,
+    filter_language: Optional[str] = "en",
     limit: int = 100,
     verbose: bool = False
 ) -> Dict[str, Any]:
@@ -323,7 +323,7 @@ async def related_concepts_tool(
     Args:
         term: The concept term to find related concepts for (e.g., "dog", "happiness")
         language: Language code for the input term (default: "en" for English)
-        filter_language: If specified, filter results to this language only
+        filter_language: Language to filter results to (default: "en" for English, use None for no filtering)
         limit: Maximum number of related concepts to return (default: 100, max: 100)
         verbose: If True, returns detailed format with full metadata (default: False)
         

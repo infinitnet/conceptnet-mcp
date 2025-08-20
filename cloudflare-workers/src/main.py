@@ -319,7 +319,7 @@ class MCPProtocol:
         return response_data
     
     async def _related_concepts(self, term: str, language: str = "en",
-                              filter_language: Optional[str] = None,
+                              filter_language: Optional[str] = "en",
                               limit: int = 100, verbose: bool = False) -> Dict[str, Any]:
         """Implement related concepts tool."""
         normalized_term = normalize_concept_text(term, language)
