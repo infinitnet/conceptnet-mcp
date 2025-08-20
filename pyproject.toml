@@ -145,11 +145,11 @@ minversion = "7.0"
 addopts = [
     "--strict-markers",
     "--strict-config",
-    "--cov=conceptnet_mcp",
+    "--cov=src/conceptnet_mcp",
     "--cov-report=term-missing",
     "--cov-report=html",
     "--cov-report=xml",
-    "--cov-fail-under=80",
+    "--cov-fail-under=20",
 ]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]

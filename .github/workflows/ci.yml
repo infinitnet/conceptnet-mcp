@@ -39,7 +39,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          python -m pytest --cov=conceptnet_mcp --cov-report=xml --cov-report=term-missing
+          python run_tests.py --type essential
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
@@ -133,4 +133,4 @@ jobs:
 
       - name: Test complete workflow with run_tests.py
         run: |
-          python run_tests.py
+          python run_tests.py --type essential

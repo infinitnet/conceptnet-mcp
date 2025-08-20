@@ -603,7 +603,6 @@ def configure_logging(
     """
     # Use basic logging configuration if simple setup is requested
     if log_format and not log_file and not enable_structured:
-        import logging
         logging.basicConfig(
             level=getattr(logging, level.upper()),
             format=log_format,
