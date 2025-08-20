@@ -26,9 +26,9 @@ logger = get_logger(__name__)
 mcp = FastMCP(
     name="ConceptNet MCP Server",
     instructions="""
-    This server provides access to ConceptNet, a large semantic network 
-    of general knowledge containing millions of assertions about concepts and their 
-    relationships. ConceptNet integrates data from multiple sources including WordNet, 
+    This server provides access to ConceptNet, a large semantic network
+    of general knowledge containing millions of assertions about concepts and their
+    relationships. ConceptNet integrates data from multiple sources including WordNet,
     Open Mind Common Sense, Wikipedia, and more.
 
     🎯 **Core Capabilities:**
@@ -66,7 +66,7 @@ mcp = FastMCP(
 
     💡 **Usage Guidelines:**
     - **Start with concept_lookup** to explore what ConceptNet knows about a concept
-    - **Use concept_query** for sophisticated filtering and targeted relationship discovery  
+    - **Use concept_query** for sophisticated filtering and targeted relationship discovery
     - **Use related_concepts** to discover similar or related ideas
     - **Use concept_relatedness** to quantify how similar two concepts are
     - All tools support multiple languages and provide extensive metadata
@@ -96,9 +96,7 @@ mcp = FastMCP(
     - `related_concepts("happiness")` - Find concepts similar to happiness
     - `concept_relatedness("cat", "dog")` - How similar are cats and dogs?
     """,
-    dependencies=["aiohttp>=3.8.0", "asyncio"],
-    include_tags={"conceptnet", "knowledge", "semantic", "nlp"},
-    on_duplicate_tools="warn"
+    include_tags={"conceptnet", "knowledge", "semantic", "nlp"}
 )
 
 # Global error handler for server-level exceptions
