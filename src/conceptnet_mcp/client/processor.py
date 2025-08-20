@@ -212,6 +212,33 @@ class ResponseProcessor:
         
         return normalized
     
+    def _clean_concept_label(self, label: str) -> str:
+        """
+        Clean concept labels by removing part-of-speech annotations.
+        
+        Removes technical annotations like /N, /V, /A, /ADJ, /ADV, etc.
+        that are used internally by ConceptNet but should not appear
+        in user-facing readable summaries.
+        
+        Args:
+            label: Original concept label that may contain POS tags
+            
+        Returns:
+            Cleaned label without part-of-speech annotations
+        """
+        if not label or not isinstance(label, str):
+            return label
+        
+        # Remove part-of-speech tags like /N, /V, /A, /ADJ, /ADV, etc.
+        # Pattern matches: slash followed by uppercase letters/common POS tags
+        pos_pattern = r'/[A-Z][A-Z]*\b'
+        cleaned = re.sub(pos_pattern, '', label)
+        
+        # Clean up any remaining whitespace
+        cleaned = cleaned.strip()
+        
+        return cleaned if cleaned else label
+    
     def _create_edge_summary(self, edge: Dict[str, Any]) -> str:
         """
         Create a human-readable summary of an edge relationship.
@@ -228,20 +255,24 @@ class ResponseProcessor:
             rel = edge.get("rel", {})
             
             start_label = (
-                start.get("normalized_label") or 
-                start.get("label") or 
+                start.get("normalized_label") or
+                start.get("label") or
                 start.get("@id", "unknown")
             )
             
             end_label = (
-                end.get("normalized_label") or 
-                end.get("label") or 
+                end.get("normalized_label") or
+                end.get("label") or
                 end.get("@id", "unknown")
             )
             
+            # Clean part-of-speech annotations from labels
+            start_label = self._clean_concept_label(start_label)
+            end_label = self._clean_concept_label(end_label)
+            
             rel_label = (
-                rel.get("normalized_label") or 
-                rel.get("label") or 
+                rel.get("normalized_label") or
+                rel.get("label") or
                 "related to"
             )
             
