@@ -211,35 +211,6 @@ pip install -e .[dev]
 pre-commit install
 ```
 
-### Testing
-
-```bash
-# Run all tests
-python run_tests.py
-
-# Run specific test categories
-pytest tests/unit/
-pytest tests/integration/
-
-# Run with coverage
-pytest --cov=conceptnet_mcp --cov-report=html
-```
-
-### Code Quality
-
-```bash
-# Format code
-black src/ tests/
-isort src/ tests/
-
-# Lint code
-flake8 src/ tests/
-mypy src/
-
-# Run all quality checks
-python validate_production_readiness.py
-```
-
 ## API Reference
 
 ### Core Models
@@ -318,7 +289,6 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/infinitnet/conceptnet-mcp/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/infinitnet/conceptnet-mcp/discussions)
 - 🌐 **Author's Website**: [https://infinitnet.io/](https://infinitnet.io/)
-- 📧 **Email**: [Contact Us](mailto:co@infinitnet.io)
 
 ---
 
