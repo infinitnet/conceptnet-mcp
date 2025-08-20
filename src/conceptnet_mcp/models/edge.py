@@ -109,9 +109,8 @@ class Edge(BaseModel):
         description="The type of relationship between the concepts"
     )
     weight: float = Field(
-        description="The confidence score or strength of this relationship (0.0 to 1.0)",
-        ge=0.0,
-        le=1.0
+        description="The confidence score or strength of this relationship (typically 0.0-20.0)",
+        ge=0.0
     )
     surface_text: Optional[str] = Field(
         default=None,
@@ -141,8 +140,8 @@ class Edge(BaseModel):
     @classmethod
     def validate_weight(cls, v: float) -> float:
         """Ensure weight is a reasonable value."""
-        if v < 0.0 or v > 1.0:
-            raise ValueError("Edge weight must be between 0.0 and 1.0")
+        if v < 0.0:
+            raise ValueError("Edge weight must be non-negative")
         return v
     
     @property

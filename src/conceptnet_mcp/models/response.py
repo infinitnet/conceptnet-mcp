@@ -229,9 +229,8 @@ class RelatednessResponse(BaseModel):
     """
     
     value: float = Field(
-        description="The relatedness score between the two concepts",
-        ge=0.0,
-        le=1.0
+        description="The relatedness score between the two concepts (as returned by ConceptNet API)",
+        ge=0.0
     )
     concept1: str = Field(
         description="URI of the first concept"
@@ -243,9 +242,9 @@ class RelatednessResponse(BaseModel):
     @field_validator('value')
     @classmethod
     def validate_relatedness_score(cls, v: float) -> float:
-        """Ensure the relatedness score is between 0 and 1."""
-        if v < 0.0 or v > 1.0:
-            raise ValueError("Relatedness score must be between 0.0 and 1.0")
+        """Ensure the relatedness score is not negative."""
+        if v < 0.0:
+            raise ValueError("Relatedness score must be non-negative")
         return v
     
     @property
