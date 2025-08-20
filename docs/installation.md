@@ -4,7 +4,7 @@ This guide covers installation and setup of the ConceptNet MCP Server.
 
 ## Requirements
 
-- Python 3.9 or higher
+- Python 3.10 or higher
 - pip package manager
 - Git
 
