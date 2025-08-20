@@ -41,11 +41,11 @@ def run_essential_tests():
                 ], capture_output=True, timeout=10)
                 if result.returncode == 0:
                     working_tests.append(test_file)
-                    print(f"✅ {test_file} - tests collected successfully")
+                    print(f"[OK] {test_file} - tests collected successfully")
                 else:
-                    print(f"⚠️  {test_file} - collection failed, skipping")
+                    print(f"[WARN] {test_file} - collection failed, skipping")
             except Exception as e:
-                print(f"⚠️  {test_file} - error checking: {e}")
+                print(f"[WARN] {test_file} - error checking: {e}")
     
     if not working_tests:
         print("No working pytest tests found!")
@@ -102,10 +102,10 @@ def check_dependencies():
     try:
         import pytest
         tools['pytest'] = True
-        print("✅ pytest available")
+        print("[OK] pytest available")
     except ImportError:
         tools['pytest'] = False
-        print("⚠️  pytest not available")
+        print("[WARN] pytest not available")
     
     return tools
 
@@ -145,10 +145,10 @@ def main():
     # Print summary
     print("\n" + "=" * 60)
     if return_code == 0:
-        print("✅ Essential tests passed!")
+        print("[OK] Essential tests passed!")
         print("Core ConceptNet MCP functionality verified.")
     else:
-        print("❌ Some essential tests failed!")
+        print("[FAIL] Some essential tests failed!")
         print(f"Exit code: {return_code}")
     
     return return_code
