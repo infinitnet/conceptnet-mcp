@@ -34,11 +34,48 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 
+def _clean_concept_term(term: str) -> str:
+    """
+    Clean concept terms by removing WordNet and POS tag annotations.
+    
+    Removes technical annotations like /Wn/Food, /Wn/Substance, /N, /V, etc.
+    that are used internally by ConceptNet but should not appear
+    in user-facing results.
+    
+    Args:
+        term: Original concept term that may contain POS tags
+        
+    Returns:
+        Cleaned term without POS tag annotations
+    """
+    if not term or not isinstance(term, str):
+        return term
+    
+    # Remove WordNet-derived tags like /Wn/Food, /Wn/Substance, etc.
+    # Pattern matches: /Wn/ followed by any word characters
+    import re
+    wn_pattern = r'/Wn/[\w]*'
+    cleaned = re.sub(wn_pattern, '', term)
+    
+    # Remove part-of-speech tags like /N, /V, /A, /ADJ, /ADV, etc.
+    # Pattern matches: slash followed by uppercase letters/common POS tags
+    pos_pattern = r'/[A-Z][A-Z]*\b'
+    cleaned = re.sub(pos_pattern, '', cleaned)
+    
+    # Remove trailing slashes (edge case)
+    cleaned = re.sub(r'/$', '', cleaned)
+    
+    # Clean up any remaining whitespace
+    cleaned = cleaned.strip()
+    
+    return cleaned if cleaned else term
+
+
 async def related_concepts(
     term: str,
     ctx: Context,
     language: str = "en",
-    filter_language: Optional[str] = "en",
+    filter_language: Optional[str] = None,
     limit: int = 100,
     verbose: bool = False
 ) -> Dict[str, Any]:
@@ -53,7 +90,7 @@ async def related_concepts(
     Args:
         term: The concept term to find related concepts for (e.g., "dog", "happiness")
         language: Language code for the input term (default: "en" for English)
-        filter_language: Language to filter results to (default: "en" for English, use None for no filtering)
+        filter_language: Language to filter results to (default: None, which defaults to "en" for English)
         limit: Maximum number of related concepts to return (default: 100, max: 100)
         verbose: If True, returns detailed format with full metadata (default: False)
         
@@ -70,6 +107,10 @@ async def related_concepts(
     start_time = datetime.now(timezone.utc)
     
     try:
+        # Default filter_language to "en" if not provided
+        if filter_language is None:
+            filter_language = "en"
+            
         # Log the incoming request
         await ctx.info(f"Finding related concepts for: '{term}' (language: {language})")
         
@@ -125,7 +166,9 @@ async def related_concepts(
                 if concept_id:
                     parts = concept_id.split('/')
                     if len(parts) >= 4 and parts[1] == 'c':
-                        term_text = parts[3].replace('_', ' ')
+                        raw_term = parts[3].replace('_', ' ')
+                        # Apply POS tag filtering to remove "/Wn/..." patterns
+                        term_text = _clean_concept_term(raw_term)
                 
                 if term_text:
                     mock_response["related_concepts"].append({

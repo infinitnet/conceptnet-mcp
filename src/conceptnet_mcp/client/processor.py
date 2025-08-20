@@ -214,9 +214,10 @@ class ResponseProcessor:
     
     def _clean_concept_label(self, label: str) -> str:
         """
-        Clean concept labels by removing part-of-speech annotations.
+        Clean concept labels by removing part-of-speech annotations and WordNet tags.
         
-        Removes technical annotations like /N, /V, /A, /ADJ, /ADV, etc.
+        Removes technical annotations like /N, /V, /A, /ADJ, /ADV, etc. and
+        WordNet-derived annotations like /Wn/Food, /Wn/Substance, etc.
         that are used internally by ConceptNet but should not appear
         in user-facing readable summaries.
         
@@ -224,15 +225,23 @@ class ResponseProcessor:
             label: Original concept label that may contain POS tags
             
         Returns:
-            Cleaned label without part-of-speech annotations
+            Cleaned label without part-of-speech annotations or WordNet tags
         """
         if not label or not isinstance(label, str):
             return label
         
+        # Remove WordNet-derived tags like /Wn/Food, /Wn/Substance, etc.
+        # Pattern matches: /Wn/ followed by any word characters
+        wn_pattern = r'/Wn/[\w]*'
+        cleaned = re.sub(wn_pattern, '', label)
+        
         # Remove part-of-speech tags like /N, /V, /A, /ADJ, /ADV, etc.
         # Pattern matches: slash followed by uppercase letters/common POS tags
         pos_pattern = r'/[A-Z][A-Z]*\b'
-        cleaned = re.sub(pos_pattern, '', label)
+        cleaned = re.sub(pos_pattern, '', cleaned)
+        
+        # Remove trailing slashes (edge case)
+        cleaned = re.sub(r'/$', '', cleaned)
         
         # Clean up any remaining whitespace
         cleaned = cleaned.strip()
