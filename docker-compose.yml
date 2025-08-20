@@ -1,0 +1,146 @@
+# ConceptNet MCP Server - Docker Compose Configuration
+# This file provides production-ready configurations for both stdio and HTTP transport modes
+
+services:
+  # STDIO Transport Configuration (for desktop MCP clients like Claude Desktop)
+  conceptnet-mcp-stdio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: "3.11"
+    image: conceptnet-mcp:latest
+    container_name: conceptnet-mcp-stdio
+    restart: unless-stopped
+    environment:
+      # ConceptNet API Configuration
+      - CONCEPTNET_API_BASE_URL=https://api.conceptnet.io
+      - CONCEPTNET_API_VERSION=5.7
+      # Logging Configuration
+      - LOG_LEVEL=INFO
+      # Rate Limiting Configuration
+      - CONCEPTNET_RATE_LIMIT=100
+      - CONCEPTNET_RATE_PERIOD=60
+      # MCP Transport Mode
+      - MCP_TRANSPORT=stdio
+    volumes:
+      # Mount source code for development (remove in production)
+      - .:/app
+      # Persist logs
+      - ./logs:/app/logs
+    networks:
+      - conceptnet-network
+    # For stdio mode, the service runs and communicates via stdin/stdout
+    command: ["python", "-m", "conceptnet_mcp.server", "--transport", "stdio"]
+    profiles:
+      - stdio
+      - development
+
+  # HTTP Transport Configuration (for web clients and remote access)
+  conceptnet-mcp-http:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: "3.11"
+    image: conceptnet-mcp:latest
+    container_name: conceptnet-mcp-http
+    restart: unless-stopped
+    ports:
+      # Expose HTTP server port
+      - "3001:3001"
+    environment:
+      # ConceptNet API Configuration
+      - CONCEPTNET_API_BASE_URL=https://api.conceptnet.io
+      - CONCEPTNET_API_VERSION=5.7
+      # HTTP Server Configuration
+      - MCP_SERVER_HOST=0.0.0.0
+      - MCP_SERVER_PORT=3001
+      # Logging Configuration
+      - LOG_LEVEL=INFO
+      # Rate Limiting Configuration
+      - CONCEPTNET_RATE_LIMIT=100
+      - CONCEPTNET_RATE_PERIOD=60
+      # MCP Transport Mode
+      - MCP_TRANSPORT=http
+    volumes:
+      # Mount source code for development (remove in production)
+      - .:/app
+      # Persist logs
+      - ./logs:/app/logs
+    networks:
+      - conceptnet-network
+    # For HTTP mode, the service runs as a web server
+    command: ["python", "-m", "conceptnet_mcp.server", "--transport", "http", "--host", "0.0.0.0", "--port", "3001"]
+    profiles:
+      - http
+      - production
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development Mode with Debug Logging
+  conceptnet-mcp-dev:
+    extends:
+      service: conceptnet-mcp-http
+    container_name: conceptnet-mcp-dev
+    environment:
+      # Override with debug settings
+      - LOG_LEVEL=DEBUG
+      - CONCEPTNET_RATE_LIMIT=1000
+      - CONCEPTNET_RATE_PERIOD=60
+    volumes:
+      # Mount source for live development
+      - .:/app
+      - ./logs:/app/logs
+      # Mount test data if available
+      - ./tests/fixtures:/app/tests/fixtures:ro
+    profiles:
+      - development
+      - debug
+    # Enable auto-reload for development
+    command: ["python", "-m", "conceptnet_mcp.server", "--transport", "http", "--host", "0.0.0.0", "--port", "3001", "--reload"]
+
+  # Production Mode with Optimized Settings
+  conceptnet-mcp-prod:
+    extends:
+      service: conceptnet-mcp-http
+    container_name: conceptnet-mcp-prod
+    environment:
+      # Production optimized settings
+      - LOG_LEVEL=WARNING
+      - CONCEPTNET_RATE_LIMIT=50
+      - CONCEPTNET_RATE_PERIOD=60
+    volumes:
+      # Only mount logs in production
+      - ./logs:/app/logs
+    profiles:
+      - production
+    # Production-ready command
+    command: ["python", "-m", "conceptnet_mcp.server", "--transport", "http", "--host", "0.0.0.0", "--port", "3001"]
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+# Networks
+networks:
+  conceptnet-network:
+    driver: bridge
+    name: conceptnet-mcp-network
+
+# Volumes for persistent data
+volumes:
+  logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs

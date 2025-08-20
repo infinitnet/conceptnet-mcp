@@ -1,0 +1,195 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conceptnet-mcp"
+version = "0.1.0"
+description = "A Model Context Protocol (MCP) server for ConceptNet API integration"
+readme = "README.md"
+license = {text = "GPL-3.0"}
+authors = [
+    {name = "Constantin Oesterling", email = "co@infinitnet.io"}
+]
+maintainers = [
+    {name = "Constantin Oesterling", email = "co@infinitnet.io"}
+]
+keywords = ["mcp", "conceptnet", "knowledge-graph", "semantic-web", "semantic-seo"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10", 
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "fastmcp>=2.0.0",
+    "fastapi>=0.115.0",
+    "httpx>=0.27.0,<0.30.0",
+    "pydantic>=2.5.0,<3.0.0",
+    "uvicorn[standard]>=0.24.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.4.0",
+    "httpx>=0.27.0",  # For testing with TestClient
+]
+docs = [
+    "mkdocs>=1.5.0",
+    "mkdocs-material>=9.2.0",
+    "mkdocstrings[python]>=0.23.0",
+]
+test = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.0",
+    "httpx>=0.27.0",
+    "respx>=0.20.0",  # For mocking HTTP requests
+]
+
+[project.urls]
+Homepage = "https://infinitnet.io/"
+"Source Code" = "https://github.com/infinitnet/conceptnet-mcp"
+Documentation = "https://github.com/infinitnet/conceptnet-mcp/tree/main/docs"
+Repository = "https://github.com/infinitnet/conceptnet-mcp"
+"Bug Tracker" = "https://github.com/infinitnet/conceptnet-mcp/issues"
+
+[project.scripts]
+conceptnet-mcp = "conceptnet_mcp.server:main"
+conceptnet-mcp-http = "conceptnet_mcp.server:run_http_server"
+conceptnet-mcp-stdio = "conceptnet_mcp.server:run_stdio_server"
+conceptnet-mcp-dev = "conceptnet_mcp.server:run_development_server"
+conceptnet-mcp-prod = "conceptnet_mcp.server:run_production_server"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["conceptnet_mcp*"]
+
+[tool.setuptools.package-data]
+conceptnet_mcp = ["py.typed"]
+
+# Black configuration
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+# isort configuration
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["conceptnet_mcp"]
+known_third_party = ["fastmcp", "fastapi", "pydantic", "httpx"]
+
+# mypy configuration
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "tests.*",
+]
+disallow_untyped_defs = false
+
+# pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=conceptnet_mcp",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+asyncio_mode = "auto"
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# Flake8 configuration
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+per-file-ignores = [
+    "__init__.py:F401",
+]
