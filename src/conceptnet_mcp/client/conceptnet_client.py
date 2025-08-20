@@ -303,7 +303,7 @@ class ConceptNetClient:
         endpoint = f"/c/{language}/{normalize_concept_text(term, language)}"
         params = {}
         if target_language:
-            params['filter'] = f'/c/{target_language}/'
+            params['filter'] = f'/c/{target_language}'
         
         response_data = await self._make_request("GET", endpoint, params=params)
         
@@ -412,7 +412,7 @@ class ConceptNetClient:
         endpoint = f"/related{concept_uri}"
         params = {"limit": str(limit)}
         if filter_language:
-            params['filter'] = f'/c/{filter_language}/'
+            params['filter'] = f'/c/{filter_language}'
         
         response_data = await self._make_request("GET", endpoint, params=params)
         
