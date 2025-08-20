@@ -25,6 +25,52 @@ ConceptNet MCP provides AI assistants and applications with structured access to
 - 🔄 **Async Operations**: Full async/await support for non-blocking operations
 - 📝 **Type Safety**: Complete Pydantic v2 type validation and IDE support
 - 🧪 **Production Ready**: Error handling, logging, and testing
+- ⚡ **Optimized Output Formats**: Choose between minimal (~96% smaller) or comprehensive responses
+
+## Output Formats
+
+ConceptNet MCP Server supports two output formats for all tools to optimize performance and reduce token usage:
+
+### Minimal Format (Default - Recommended)
+- **Size**: ~96% smaller than verbose format
+- **Optimized**: Designed specifically for LLM consumption
+- **Content**: Essential data only - concepts, relationships, similarity scores
+- **Performance**: Faster processing and reduced API costs
+- **Usage**: Perfect for most AI applications and chat interfaces
+
+### Verbose Format (Legacy)
+- **Size**: Full ConceptNet response data
+- **Content**: Complete metadata, statistics, analysis, and original API responses
+- **Usage**: Detailed analysis, debugging, or when full context is needed
+- **Backward Compatibility**: Maintains compatibility with existing integrations
+
+### Setting the Format
+
+All tools accept a `verbose` parameter:
+
+```json
+{
+  "name": "concept_lookup",
+  "arguments": {
+    "term": "artificial intelligence",
+    "verbose": false  // Default: minimal format
+  }
+}
+```
+
+```json
+{
+  "name": "related_concepts",
+  "arguments": {
+    "term": "machine learning",
+    "verbose": true   // Full detailed format
+  }
+}
+```
+
+**Examples of size difference:**
+- Minimal: `{"concept": "dog", "relationships": {"IsA": ["animal", "mammal"]}}`
+- Verbose: Full ConceptNet response with complete metadata, statistics, timestamps, etc.
 
 ## Quick Start
 
@@ -196,63 +242,103 @@ For detailed deployment instructions, configuration options, and troubleshooting
 
 ### 1. Concept Lookup
 
-Get detailed information about a specific concept.
+Get detailed information about a specific concept. Returns all relationships and properties.
 
 ```json
 {
   "name": "concept_lookup",
   "arguments": {
-    "concept": "dog",
-    "language": "en"
+    "term": "artificial intelligence",
+    "language": "en",
+    "limit_results": false,
+    "target_language": null,
+    "verbose": false
   }
 }
 ```
 
+**Parameters:**
+- `term` (required): The concept to look up
+- `language` (default: "en"): Language code for the concept
+- `limit_results` (default: false): Limit to first 20 results for quick queries
+- `target_language` (optional): Filter results to specific target language
+- `verbose` (default: false): Return detailed format vs minimal format
+
 ### 2. Concept Query
 
-Search for concepts with advanced filtering.
+Advanced querying with sophisticated multi-parameter filtering.
 
 ```json
 {
   "name": "concept_query",
   "arguments": {
-    "query": "animal",
+    "start": "car",
+    "rel": "IsA",
     "language": "en",
-    "limit": 10,
-    "offset": 0
+    "limit_results": false,
+    "verbose": false
   }
 }
 ```
 
+**Parameters:**
+- `start` (optional): Start concept of relationships
+- `end` (optional): End concept of relationships
+- `rel` (optional): Relation type (e.g., "IsA", "PartOf")
+- `node` (optional): Concept that must be start or end of edges
+- `other` (optional): Used with 'node' parameter
+- `sources` (optional): Filter by data source
+- `language` (default: "en"): Language filter
+- `limit_results` (default: false): Limit to 20 results for quick queries
+- `verbose` (default: false): Return detailed format vs minimal format
+
 ### 3. Related Concepts
 
-Find concepts connected through semantic relationships.
+Find concepts semantically similar to a given concept using ConceptNet's embeddings.
 
 ```json
 {
   "name": "related_concepts",
   "arguments": {
-    "concept": "dog",
+    "term": "machine learning",
     "language": "en",
-    "limit": 5
+    "filter_language": null,
+    "limit": 100,
+    "verbose": false
   }
 }
 ```
 
+**Parameters:**
+- `term` (required): The concept to find related concepts for
+- `language` (default: "en"): Language code for input term
+- `filter_language` (optional): Filter results to this language only
+- `limit` (default: 100, max: 100): Maximum number of related concepts
+- `verbose` (default: false): Return detailed format vs minimal format
+
 ### 4. Concept Relatedness
 
-Calculate semantic similarity between two concepts.
+Calculate precise semantic relatedness score between two concepts.
 
 ```json
 {
   "name": "concept_relatedness",
   "arguments": {
-    "concept1": "dog",
-    "concept2": "cat",
-    "language": "en"
+    "concept1": "artificial intelligence",
+    "concept2": "machine learning",
+    "language1": "en",
+    "language2": "en",
+    "verbose": false
   }
 }
 ```
+
+**Parameters:**
+- `concept1` (required): First concept for comparison
+- `concept2` (required): Second concept for comparison
+- `language1` (default: "en"): Language for first concept
+- `language2` (default: "en"): Language for second concept
+- `verbose` (default: false): Return detailed format vs minimal format
 
 ## Configuration
 

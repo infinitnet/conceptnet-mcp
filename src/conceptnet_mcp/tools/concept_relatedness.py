@@ -13,6 +13,7 @@ import time
 from fastmcp import Context, FastMCP
 
 from ..client.conceptnet_client import ConceptNetClient
+from ..client.processor import ResponseProcessor
 from ..utils.exceptions import (
     ConceptNotFoundError,
     ConceptNetAPIError,
@@ -34,30 +35,33 @@ async def concept_relatedness(
     concept2: str,
     ctx: Context,
     language1: str = "en",
-    language2: str = "en"
+    language2: str = "en",
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     Calculate semantic relatedness score between two concepts.
     
     This tool uses ConceptNet's semantic embeddings to calculate how
     related two concepts are to each other. The score ranges from 0.0
-    (completely unrelated) to 1.0 (very strongly related).
+    (completely unrelated) to 1.0 (very strongly related). By default,
+    returns a minimal format optimized for LLM consumption.
     
     Args:
         concept1: First concept term for comparison (e.g., "dog", "happiness")
         concept2: Second concept term for comparison (e.g., "cat", "joy")
         language1: Language code for first concept (default: "en")
         language2: Language code for second concept (default: "en")
+        verbose: If True, returns detailed format with full metadata (default: False)
         
     Returns:
-        Comprehensive relatedness analysis including numeric score,
-        descriptive interpretation, relationship analysis, and metadata.
+        Relatedness score with strength category (minimal format) or
+        comprehensive analysis with detailed metadata (verbose format).
         
     Examples:
-        - concept_relatedness("dog", "cat") -> Compare semantic similarity of dog and cat
+        - concept_relatedness("dog", "cat") -> Minimal format: {"concept1": "dog", "concept2": "cat", "relatedness": 0.78, "strength": "strong"}
+        - concept_relatedness("dog", "cat", verbose=True) -> Full detailed format with analysis
         - concept_relatedness("perro", "dog", "es", "en") -> Cross-language comparison
         - concept_relatedness("happy", "sad") -> Compare emotional concepts
-        - concept_relatedness("car", "bicycle") -> Compare transportation concepts
     """
     start_time = datetime.now(timezone.utc)
     execution_start = time.time()
@@ -101,20 +105,32 @@ async def concept_relatedness(
             except ConceptNetAPIError as e:
                 return _create_api_error_response(concept1, concept2, language1, language2, str(e), start_time)
         
-        # 5. Process and enhance the response
+        # 5. Return appropriate format based on verbose parameter
         execution_time_ms = int((time.time() - execution_start) * 1000)
+        score = response.get('value', 0.0)
         
-        enhanced_response = await _create_enhanced_response(
-            response, concept1, concept2, normalized_concept1, normalized_concept2,
-            language1, language2, start_time, execution_time_ms, ctx
-        )
-        
-        # Log completion
-        score = enhanced_response.get("relatedness", {}).get("score", 0.0)
-        description = enhanced_response.get("relatedness", {}).get("description", "unknown")
-        await ctx.info(f"Relatedness calculated: {score:.3f} ({description})")
-        
-        return enhanced_response
+        if verbose:
+            # Return detailed format with full metadata (existing behavior)
+            enhanced_response = await _create_enhanced_response(
+                response, concept1, concept2, normalized_concept1, normalized_concept2,
+                language1, language2, start_time, execution_time_ms, ctx
+            )
+            
+            description = enhanced_response.get("relatedness", {}).get("description", "unknown")
+            await ctx.info(f"Relatedness calculated: {score:.3f} ({description}) (verbose format)")
+            
+            return enhanced_response
+        else:
+            # Return minimal format optimized for LLMs
+            processor = ResponseProcessor()
+            minimal_response = processor.create_minimal_relatedness_response(
+                score, concept1, concept2
+            )
+            
+            strength = minimal_response.get("strength", "unknown")
+            await ctx.info(f"Relatedness calculated: {score:.3f} ({strength}) (minimal format)")
+            
+            return minimal_response
         
     except MCPValidationError as e:
         # Handle validation errors specifically
@@ -241,43 +257,9 @@ async def _check_identical_concepts(
     norm2 = normalize_concept_text(concept2, language2)
     
     if norm1.lower() == norm2.lower() and language1 == language2:
-        return {
-            "query_info": {
-                "concept1": {
-                    "term": concept1,
-                    "normalized": norm1,
-                    "language": language1,
-                    "uri": construct_concept_uri(norm1, language1)
-                },
-                "concept2": {
-                    "term": concept2,
-                    "normalized": norm2,
-                    "language": language2,
-                    "uri": construct_concept_uri(norm2, language2)
-                },
-                "comparison_type": "identical"
-            },
-            "relatedness": {
-                "score": 1.0,
-                "description": "identical",
-                "interpretation": "These are the same concept",
-                "percentile": 100,
-                "confidence": "perfect"
-            },
-            "analysis": {
-                "relationship_strength": "identical",
-                "likely_connections": ["These concepts refer to the same entity"],
-                "semantic_distance": 0.0,
-                "similarity_category": "identical",
-                "note": "Concepts are identical or very similar"
-            },
-            "metadata": {
-                "query_time": start_time.isoformat() + "Z",
-                "execution_time_ms": 0,
-                "endpoint_used": "local_comparison",
-                "calculation_method": "text_normalization"
-            }
-        }
+        # Return minimal format for identical concepts (this function is called before verbose check)
+        processor = ResponseProcessor()
+        return processor.create_minimal_relatedness_response(1.0, concept1, concept2)
     
     return None
 

@@ -212,7 +212,7 @@ class RelatedConceptsQuery(BaseModel):
         description="Filter results to specific language"
     )
     limit: int = Field(
-        default=20,
+        default=100,
         description="Maximum number of related concepts to return",
         ge=1,
         le=100

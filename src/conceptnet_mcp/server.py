@@ -142,6 +142,12 @@ async def handle_server_error(error: Exception, context: str = "server") -> Dict
     - Language filtering and cross-language exploration
     - Summaries and statistics
     - Performance optimized with automatic pagination
+    - Format control: minimal (~96% smaller) vs verbose (full metadata)
+    
+    Format Options:
+    - verbose=false (default): Returns minimal format optimized for LLM consumption
+    - verbose=true: Returns comprehensive format with full ConceptNet metadata
+    - Backward compatibility maintained with existing tools
     
     Use this when you need to:
     - Understand what ConceptNet knows about a concept
@@ -156,19 +162,21 @@ async def concept_lookup_tool(
     ctx: Context,
     language: str = "en",
     limit_results: bool = False,
-    target_language: Optional[str] = None
+    target_language: Optional[str] = None,
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     MCP tool wrapper for concept lookup functionality.
     
     Args:
         term: The concept term to look up (e.g., "dog", "artificial intelligence")
-        language: Language code for the concept (default: "en" for English)  
+        language: Language code for the concept (default: "en" for English)
         limit_results: If True, limits to first 20 results for quick queries (default: False)
         target_language: If specified, filters results to edges involving this language
+        verbose: If True, returns detailed format with full metadata (default: False)
         
     Returns:
-        Comprehensive concept information with all related edges and metadata
+        Concept relationships grouped by type (minimal format) or comprehensive data with full metadata (verbose format)
     """
     try:
         return await concept_lookup(
@@ -176,14 +184,15 @@ async def concept_lookup_tool(
             ctx=ctx,
             language=language,
             limit_results=limit_results,
-            target_language=target_language
+            target_language=target_language,
+            verbose=verbose
         )
     except Exception as e:
         return await handle_server_error(e, "concept_lookup")
 
 # Register Tool 2: Concept Query
 @mcp.tool(
-    name="concept_query", 
+    name="concept_query",
     description="""
     Advanced querying of ConceptNet with sophisticated multi-parameter filtering.
     
@@ -196,9 +205,15 @@ async def concept_lookup_tool(
     - Complex relationship discovery and analysis
     - Comprehensive result processing and enhancement
     - Query optimization and performance metrics
+    - Format control: minimal (~96% smaller) vs verbose (full metadata)
+    
+    Format Options:
+    - verbose=false (default): Returns minimal format optimized for LLM consumption
+    - verbose=true: Returns comprehensive format with full ConceptNet metadata
+    - Backward compatibility maintained with existing tools
     
     Filter Parameters:
-    - start: Start concept of relationships (e.g., "dog", "/c/en/dog") 
+    - start: Start concept of relationships (e.g., "dog", "/c/en/dog")
     - end: End concept of relationships (e.g., "animal", "/c/en/animal")
     - rel: Relation type (e.g., "IsA", "/r/IsA")
     - node: Concept that must be either start or end of edges
@@ -222,7 +237,8 @@ async def concept_query_tool(
     other: Optional[str] = None,
     sources: Optional[str] = None,
     language: str = "en",
-    limit_results: bool = False
+    limit_results: bool = False,
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     MCP tool wrapper for advanced concept querying functionality.
@@ -230,15 +246,16 @@ async def concept_query_tool(
     Args:
         start: Start concept URI or term (e.g., "dog", "/c/en/dog")
         end: End concept URI or term (e.g., "animal", "/c/en/animal")
-        rel: Relation type (e.g., "IsA", "/r/IsA") 
+        rel: Relation type (e.g., "IsA", "/r/IsA")
         node: Concept that must be either start or end of edges
         other: Used with 'node' to find relationships between two specific concepts
         sources: Filter by data source (e.g., "wordnet", "/s/activity/omcs")
         language: Language filter for concepts (default: "en")
         limit_results: If True, limits to 20 results for quick queries (default: False)
+        verbose: If True, returns detailed format with full metadata (default: False)
         
     Returns:
-        Comprehensive query results with edges, analysis, and metadata
+        Query results with relationships grouped by type (minimal format) or comprehensive data with full metadata (verbose format)
     """
     try:
         return await concept_query(
@@ -250,7 +267,8 @@ async def concept_query_tool(
             other=other,
             sources=sources,
             language=language,
-            limit_results=limit_results
+            limit_results=limit_results,
+            verbose=verbose
         )
     except Exception as e:
         return await handle_server_error(e, "concept_query")
@@ -270,6 +288,12 @@ async def concept_query_tool(
     - Ranked results with detailed similarity analysis
     - Language filtering and cross-language exploration
     - Statistical analysis and categorization
+    - Format control: minimal (~96% smaller) vs verbose (full metadata)
+    
+    Format Options:
+    - verbose=false (default): Returns minimal format optimized for LLM consumption
+    - verbose=true: Returns comprehensive format with full ConceptNet metadata
+    - Backward compatibility maintained with existing tools
     
     Similarity Analysis:
     - Similarity scores from 0.0 (unrelated) to 1.0 (very similar)
@@ -290,7 +314,8 @@ async def related_concepts_tool(
     ctx: Context,
     language: str = "en",
     filter_language: Optional[str] = None,
-    limit: int = 20
+    limit: int = 100,
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     MCP tool wrapper for finding related concepts functionality.
@@ -299,10 +324,11 @@ async def related_concepts_tool(
         term: The concept term to find related concepts for (e.g., "dog", "happiness")
         language: Language code for the input term (default: "en" for English)
         filter_language: If specified, filter results to this language only
-        limit: Maximum number of related concepts to return (default: 20, max: 100)
+        limit: Maximum number of related concepts to return (default: 100, max: 100)
+        verbose: If True, returns detailed format with full metadata (default: False)
         
     Returns:
-        Related concepts with similarity scores, analysis, and metadata
+        Related concepts with similarity scores (minimal format) or comprehensive analysis with statistical metadata (verbose format)
     """
     try:
         return await related_concepts(
@@ -310,7 +336,8 @@ async def related_concepts_tool(
             ctx=ctx,
             language=language,
             filter_language=filter_language,
-            limit=limit
+            limit=limit,
+            verbose=verbose
         )
     except Exception as e:
         return await handle_server_error(e, "related_concepts")
@@ -330,6 +357,12 @@ async def related_concepts_tool(
     - Cross-language comparison support
     - Detailed relationship analysis and interpretation
     - Confidence levels and percentile estimates
+    - Format control: minimal (~96% smaller) vs verbose (full metadata)
+    
+    Format Options:
+    - verbose=false (default): Returns minimal format optimized for LLM consumption
+    - verbose=true: Returns comprehensive format with full ConceptNet metadata
+    - Backward compatibility maintained with existing tools
     
     Analysis Components:
     - Numeric relatedness score (0.0-1.0)
@@ -351,19 +384,21 @@ async def concept_relatedness_tool(
     concept2: str,
     ctx: Context,
     language1: str = "en",
-    language2: str = "en"
+    language2: str = "en",
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     MCP tool wrapper for concept relatedness calculation functionality.
     
     Args:
         concept1: First concept term for comparison (e.g., "dog", "happiness")
-        concept2: Second concept term for comparison (e.g., "cat", "joy") 
+        concept2: Second concept term for comparison (e.g., "cat", "joy")
         language1: Language code for first concept (default: "en")
         language2: Language code for second concept (default: "en")
+        verbose: If True, returns detailed format with full metadata (default: False)
         
     Returns:
-        Comprehensive relatedness analysis with score, interpretation, and metadata
+        Relatedness score with strength category (minimal format) or comprehensive analysis with detailed metadata (verbose format)
     """
     try:
         return await concept_relatedness(
@@ -371,7 +406,8 @@ async def concept_relatedness_tool(
             concept2=concept2,
             ctx=ctx,
             language1=language1,
-            language2=language2
+            language2=language2,
+            verbose=verbose
         )
     except Exception as e:
         return await handle_server_error(e, "concept_relatedness")

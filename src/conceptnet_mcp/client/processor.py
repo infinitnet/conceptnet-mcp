@@ -586,3 +586,233 @@ class ResponseProcessor:
             "weight_range": (min(weights), max(weights)) if weights else (0.0, 0.0),
             "most_common_relation": max(relations, key=relations.get) if relations else None
         }
+    
+    # ===== MINIMAL FORMAT METHODS =====
+    
+    def create_minimal_concept_response(
+        self,
+        processed_response: Dict[str, Any],
+        concept_term: str
+    ) -> Dict[str, Any]:
+        """
+        Create minimal format response for concept_lookup and concept_query tools.
+        
+        Args:
+            processed_response: Processed response with normalized edges
+            concept_term: The main concept term being queried
+            
+        Returns:
+            Minimal format response optimized for LLM consumption
+        """
+        edges = processed_response.get("edges", [])
+        
+        # Extract relationships grouped by type
+        relationships = self._extract_relationships_by_type(edges)
+        
+        # Calculate summary statistics
+        summary = self._calculate_minimal_summary(
+            {"edges": edges, "relationships": relationships},
+            "concept"
+        )
+        
+        return {
+            "concept": concept_term,
+            "relationships": relationships,
+            "summary": summary
+        }
+    
+    def create_minimal_related_response(
+        self,
+        processed_response: Dict[str, Any],
+        concept_term: str
+    ) -> Dict[str, Any]:
+        """
+        Create minimal format response for related_concepts tool.
+        
+        Args:
+            processed_response: Processed response with related concepts
+            concept_term: The main concept term being queried
+            
+        Returns:
+            Minimal format response optimized for LLM consumption
+        """
+        related_concepts_raw = processed_response.get("related_concepts", [])
+        
+        # Extract clean concept list with weights
+        related_concepts = []
+        weights = []
+        
+        for concept_data in related_concepts_raw:
+            concept_info = concept_data.get("concept", {})
+            similarity = concept_data.get("similarity", {})
+            
+            term = concept_info.get("normalized_display") or concept_info.get("term", "")
+            weight = similarity.get("score", 0.0)
+            
+            if term:
+                related_concepts.append({
+                    "term": term,
+                    "weight": round(weight, 4)
+                })
+                weights.append(weight)
+        
+        # Calculate summary statistics
+        summary = self._calculate_minimal_summary(
+            {"related_concepts": related_concepts, "weights": weights},
+            "related"
+        )
+        
+        return {
+            "concept": concept_term,
+            "related_concepts": related_concepts,
+            "summary": summary
+        }
+    
+    def create_minimal_relatedness_response(
+        self,
+        score: float,
+        concept1: str,
+        concept2: str
+    ) -> Dict[str, Any]:
+        """
+        Create minimal format response for concept_relatedness tool.
+        
+        Args:
+            score: Relatedness score (0.0-1.0)
+            concept1: First concept term
+            concept2: Second concept term
+            
+        Returns:
+            Minimal format response optimized for LLM consumption
+        """
+        # Determine strength category
+        if score >= 0.7:
+            strength = "strong"
+        elif score >= 0.4:
+            strength = "moderate"
+        else:
+            strength = "weak"
+        
+        return {
+            "concept1": concept1,
+            "concept2": concept2,
+            "relatedness": round(score, 4),
+            "strength": strength
+        }
+    
+    def _extract_relationships_by_type(self, edges: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Extract and group relationships by semantic type.
+        
+        Args:
+            edges: List of processed edge dictionaries
+            
+        Returns:
+            Dictionary mapping relation types to lists of related concepts with weights
+        """
+        relationships = {}
+        
+        for edge in edges:
+            try:
+                # Extract relation type
+                rel = edge.get("rel", {})
+                rel_name = (
+                    rel.get("normalized_label") or
+                    rel.get("label") or
+                    "related_to"
+                ).lower().replace(" ", "_")
+                
+                # Extract target concept and weight
+                start = edge.get("start", {})
+                end = edge.get("end", {})
+                weight = edge.get("weight", 0.0)
+                
+                # Determine which concept is the target (not the main concept)
+                start_label = (
+                    start.get("normalized_label") or
+                    start.get("label") or
+                    ""
+                )
+                end_label = (
+                    end.get("normalized_label") or
+                    end.get("label") or
+                    ""
+                )
+                
+                # Clean labels (remove POS tags)
+                start_label = self._clean_concept_label(start_label)
+                end_label = self._clean_concept_label(end_label)
+                
+                # Add both directions (start->end and end->start relationships)
+                for target_label in [start_label, end_label]:
+                    if target_label:
+                        if rel_name not in relationships:
+                            relationships[rel_name] = []
+                        
+                        # Check for duplicates
+                        existing_terms = [item["term"] for item in relationships[rel_name]]
+                        if target_label not in existing_terms:
+                            relationships[rel_name].append({
+                                "term": target_label,
+                                "weight": round(weight, 4)
+                            })
+                
+            except Exception as e:
+                self.logger.warning(f"Failed to extract relationship from edge: {e}")
+                continue
+        
+        # Sort each relationship type by weight (highest first)
+        for rel_type in relationships:
+            relationships[rel_type] = sorted(
+                relationships[rel_type],
+                key=lambda x: x["weight"],
+                reverse=True
+            )
+        
+        return relationships
+    
+    def _calculate_minimal_summary(
+        self,
+        data: Dict[str, Any],
+        summary_type: str
+    ) -> Dict[str, Any]:
+        """
+        Calculate summary statistics for minimal format responses.
+        
+        Args:
+            data: Data dictionary containing edges, relationships, or related concepts
+            summary_type: Type of summary ("concept", "related", "relatedness")
+            
+        Returns:
+            Summary statistics dictionary
+        """
+        if summary_type == "concept":
+            # Summary for concept_lookup/concept_query
+            edges = data.get("edges", [])
+            relationships = data.get("relationships", {})
+            
+            weights = [edge.get("weight", 0.0) for edge in edges if edge.get("weight")]
+            high_confidence_count = len([w for w in weights if w >= 0.7])
+            
+            return {
+                "total_relationships": len(edges),
+                "relationship_types": len(relationships),
+                "avg_confidence": round(sum(weights) / len(weights), 3) if weights else 0.0,
+                "high_confidence_count": high_confidence_count
+            }
+            
+        elif summary_type == "related":
+            # Summary for related_concepts
+            related_concepts = data.get("related_concepts", [])
+            weights = data.get("weights", [])
+            
+            return {
+                "total_found": len(related_concepts),
+                "avg_similarity": round(sum(weights) / len(weights), 3) if weights else 0.0,
+                "top_similarity": round(max(weights), 3) if weights else 0.0,
+                "similarity_range": [round(min(weights), 3), round(max(weights), 3)] if weights else [0.0, 0.0]
+            }
+            
+        else:
+            # Default empty summary
+            return {}

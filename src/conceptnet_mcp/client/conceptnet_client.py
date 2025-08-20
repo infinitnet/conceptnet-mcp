@@ -379,7 +379,7 @@ class ConceptNetClient:
         term: str,
         language: str = "en",
         filter_language: Optional[str] = None,
-        limit: int = 20
+        limit: int = 100
     ) -> Dict[str, Any]:
         """
         Find semantically similar concepts.

@@ -39,30 +39,33 @@ async def related_concepts(
     ctx: Context,
     language: str = "en",
     filter_language: Optional[str] = None,
-    limit: int = 20
+    limit: int = 100,
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     Find concepts semantically related to the given concept.
     
     This tool uses ConceptNet's semantic similarity algorithms to find
     concepts that are related to the input term. Results are ranked by
-    similarity score and can be filtered by language.
+    similarity score and can be filtered by language. By default, returns
+    a minimal format optimized for LLM consumption.
     
     Args:
         term: The concept term to find related concepts for (e.g., "dog", "happiness")
         language: Language code for the input term (default: "en" for English)
         filter_language: If specified, filter results to this language only
-        limit: Maximum number of related concepts to return (default: 20, max: 100)
+        limit: Maximum number of related concepts to return (default: 100, max: 100)
+        verbose: If True, returns detailed format with full metadata (default: False)
         
     Returns:
-        Comprehensive results including related concepts with similarity scores,
-        statistical analysis, and metadata about the search.
+        Related concepts with similarity scores (minimal format) or
+        comprehensive analysis with statistical metadata (verbose format).
         
     Examples:
-        - related_concepts("dog") -> Find concepts related to "dog" in English
-        - related_concepts("perro", "es") -> Find concepts related to "perro" in Spanish
-        - related_concepts("dog", filter_language="es") -> Find Spanish concepts related to "dog"
-        - related_concepts("cat", limit=10) -> Get top 10 concepts related to "cat"
+        - related_concepts("dog") -> Minimal format with similarity scores
+        - related_concepts("dog", verbose=True) -> Full detailed format with analysis
+        - related_concepts("perro", "es") -> Spanish concepts related to "perro"
+        - related_concepts("cat", limit=10) -> Top 10 concepts related to "cat"
     """
     start_time = datetime.now(timezone.utc)
     
@@ -94,17 +97,55 @@ async def related_concepts(
             except ConceptNetAPIError as e:
                 return _create_api_error_response(term, language, str(e))
         
-        # 4. Process and enhance the response
-        enhanced_response = await _create_enhanced_response(
-            response, term, normalized_term, language, filter_language, 
-            limit, start_time, ctx
-        )
-        
-        # Log completion
-        total_found = enhanced_response.get("summary", {}).get("total_found", 0)
-        await ctx.info(f"Successfully found {total_found} related concepts for '{term}'")
-        
-        return enhanced_response
+        # 4. Return appropriate format based on verbose parameter
+        if verbose:
+            # Return detailed format with full metadata (existing behavior)
+            enhanced_response = await _create_enhanced_response(
+                response, term, normalized_term, language, filter_language,
+                limit, start_time, ctx
+            )
+            
+            total_found = enhanced_response.get("summary", {}).get("total_found", 0)
+            await ctx.info(f"Successfully found {total_found} related concepts for '{term}' (verbose format)")
+            
+            return enhanced_response
+        else:
+            # Return minimal format optimized for LLMs
+            # Create a mock processed response for the minimal formatter
+            mock_response = {"related_concepts": []}
+            
+            # Process raw related concepts data
+            related_concepts_raw = response.get("related", [])
+            for i, concept_data in enumerate(related_concepts_raw):
+                concept_id = concept_data.get("@id", "")
+                weight = concept_data.get("weight", 0.0)
+                
+                # Extract term from URI
+                term_text = ""
+                if concept_id:
+                    parts = concept_id.split('/')
+                    if len(parts) >= 4 and parts[1] == 'c':
+                        term_text = parts[3].replace('_', ' ')
+                
+                if term_text:
+                    mock_response["related_concepts"].append({
+                        "concept": {
+                            "term": term_text,
+                            "normalized_display": term_text
+                        },
+                        "similarity": {
+                            "score": weight
+                        }
+                    })
+            
+            minimal_response = ResponseProcessor().create_minimal_related_response(
+                mock_response, term
+            )
+            
+            total_found = minimal_response.get("summary", {}).get("total_found", 0)
+            await ctx.info(f"Successfully found {total_found} related concepts for '{term}' (minimal format)")
+            
+            return minimal_response
         
     except MCPValidationError as e:
         # Handle validation errors specifically

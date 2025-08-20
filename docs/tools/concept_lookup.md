@@ -10,7 +10,8 @@ The `concept_lookup` tool retrieves detailed information about a specific concep
 async def concept_lookup(
     concept: str,
     ctx: Context,
-    language: str = "en"
+    language: str = "en",
+    verbose: bool = False
 ) -> Dict[str, Any]:
 ```
 
@@ -21,6 +22,28 @@ async def concept_lookup(
 | `concept` | `str` | Required | The concept to look up (e.g., "dog", "artificial intelligence") |
 | `ctx` | `Context` | Required | FastMCP context for logging and progress reporting |
 | `language` | `str` | `"en"` | Language code for the concept (ISO 639-1 format) |
+| `verbose` | `bool` | `False` | Output format: `False` for minimal (LLM-optimized), `True` for full ConceptNet format |
+
+## Output Formats
+
+The tool supports two output formats controlled by the `verbose` parameter:
+
+- **`verbose=false` (default)**: Returns minimal format (~96% smaller, LLM-optimized)
+- **`verbose=true`**: Returns full ConceptNet response format with complete metadata
+
+### Minimal Format (verbose=false)
+```json
+{
+  "concept": "dog",
+  "relationships": [
+    {"relation": "IsA", "target": "animal", "weight": 8.5},
+    {"relation": "HasProperty", "target": "loyal", "weight": 6.2}
+  ],
+  "total_relationships": 150
+}
+```
+
+### Verbose Format (verbose=true)
 
 ## Response Structure
 

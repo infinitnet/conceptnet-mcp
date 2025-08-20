@@ -49,14 +49,16 @@ async def concept_query(
     other: Optional[str] = None,
     sources: Optional[str] = None,
     language: str = "en",
-    limit_results: bool = False
+    limit_results: bool = False,
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     Advanced querying of ConceptNet with multiple filters.
     
     This tool provides sophisticated filtering capabilities for exploring
     ConceptNet's knowledge graph. You can combine multiple filters to find
-    specific types of relationships and concepts.
+    specific types of relationships and concepts. By default, returns a
+    minimal format optimized for LLM consumption.
     
     Args:
         start: Start concept URI or term (e.g., "dog", "/c/en/dog")
@@ -67,14 +69,16 @@ async def concept_query(
         sources: Filter by data source (e.g., "wordnet", "/s/activity/omcs")
         language: Language filter for concepts (default: "en")
         limit_results: If True, limits to 20 results for quick queries (default: False)
+        verbose: If True, returns detailed format with full metadata (default: False)
         
     Returns:
-        Comprehensive query results with edges, summaries, and metadata
+        Query results with relationships grouped by type (minimal format) or
+        comprehensive data with full metadata (verbose format).
         
     Examples:
-        - concept_query(start="dog", rel="IsA") -> Find what dogs are
-        - concept_query(end="vehicle", rel="IsA") -> Find types of vehicles
-        - concept_query(node="car", other="transportation") -> Relationships between car and transportation
+        - concept_query(start="dog", rel="IsA") -> Minimal format with grouped relationships
+        - concept_query(start="dog", rel="IsA", verbose=True) -> Full detailed format
+        - concept_query(node="car", other="transportation") -> Car-transportation relationships
     """
     start_time = datetime.now(timezone.utc)
     
@@ -117,17 +121,45 @@ async def concept_query(
         if len(filtered_edges) != len(edges):
             await ctx.info(f"Applied same-language filtering ({language}): {len(edges)} → {len(filtered_edges)} edges")
         
-        # 5. Create comprehensive enhanced response
-        enhanced_response = await _create_enhanced_query_response(
-            processed_edges, response, validated_params, filters,
-            language, limit_results, start_time, ctx
-        )
-        
-        # Log completion
-        total_edges = len(processed_edges)
-        await ctx.info(f"Successfully completed query with {total_edges} results")
-        
-        return enhanced_response
+        # 5. Return appropriate format based on verbose parameter
+        if verbose:
+            # Return detailed format with full metadata (existing behavior)
+            enhanced_response = await _create_enhanced_query_response(
+                processed_edges, response, validated_params, filters,
+                language, limit_results, start_time, ctx
+            )
+            
+            total_edges = len(processed_edges)
+            await ctx.info(f"Successfully completed query with {total_edges} results (verbose format)")
+            
+            return enhanced_response
+        else:
+            # Return minimal format optimized for LLMs
+            # Create a mock processed response for the minimal formatter
+            mock_response = {"edges": processed_edges}
+            
+            # Determine concept term for minimal response (use first non-None parameter)
+            concept_term = (
+                validated_params.get("start") or
+                validated_params.get("end") or
+                validated_params.get("node") or
+                "query_results"
+            )
+            
+            # Extract just the term part if it's a URI
+            if concept_term and concept_term.startswith('/c/'):
+                parts = concept_term.split('/')
+                if len(parts) >= 4:
+                    concept_term = parts[3]  # Extract term from /c/lang/term
+            
+            minimal_response = processor.create_minimal_concept_response(
+                mock_response, concept_term
+            )
+            
+            total_relationships = minimal_response.get("summary", {}).get("total_relationships", 0)
+            await ctx.info(f"Successfully completed query with {total_relationships} relationships (minimal format)")
+            
+            return minimal_response
         
     except MCPValidationError as e:
         return _create_validation_error_response(e, start_time)

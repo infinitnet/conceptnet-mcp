@@ -31,29 +31,31 @@ async def concept_lookup(
     ctx: Context,
     language: str = "en",
     limit_results: bool = False,
-    target_language: Optional[str] = None
+    target_language: Optional[str] = None,
+    verbose: bool = False
 ) -> Dict[str, Any]:
     """
     Look up all edges for a specific concept in ConceptNet.
     
     This tool queries ConceptNet's knowledge graph to find all relationships
     and properties associated with a given concept. By default, it returns
-    ALL results (not limited to 20) to provide comprehensive information.
+    a minimal format optimized for LLM consumption.
     
     Args:
         term: The concept term to look up (e.g., "dog", "artificial intelligence")
         language: Language code for the concept (default: "en" for English)
         limit_results: If True, limits to first 20 results for quick queries (default: False)
         target_language: If specified, filters results to edges involving this language
+        verbose: If True, returns detailed format with full metadata (default: False)
         
     Returns:
-        Comprehensive concept data including all related edges, relationship summaries,
-        and metadata about the query results.
+        Concept data with relationships grouped by type (minimal format) or
+        comprehensive data with full metadata (verbose format).
         
     Examples:
-        - concept_lookup("dog") -> All relationships for "dog" in English
-        - concept_lookup("perro", "es") -> All relationships for "perro" in Spanish
-        - concept_lookup("cat", target_language="en") -> Only English-language cat relationships
+        - concept_lookup("dog") -> Minimal format with grouped relationships
+        - concept_lookup("dog", verbose=True) -> Full detailed format with metadata
+        - concept_lookup("perro", "es") -> Spanish concept relationships in minimal format
     """
     start_time = datetime.now(timezone.utc)
     
@@ -94,17 +96,28 @@ async def concept_lookup(
             response, target_language=effective_target_language
         )
         
-        # 6. Create enhanced response with summaries and metadata
-        enhanced_response = await _create_enhanced_response(
-            processed_response, term, normalized_term, language,
-            effective_target_language, limit_results, start_time, ctx
-        )
-        
-        # Log completion
-        total_edges = enhanced_response.get("summary", {}).get("total_edges", 0)
-        await ctx.info(f"Successfully retrieved {total_edges} edges for concept '{term}'")
-        
-        return enhanced_response
+        # 6. Return appropriate format based on verbose parameter
+        if verbose:
+            # Return detailed format with full metadata (existing behavior)
+            enhanced_response = await _create_enhanced_response(
+                processed_response, term, normalized_term, language,
+                effective_target_language, limit_results, start_time, ctx
+            )
+            
+            total_edges = enhanced_response.get("summary", {}).get("total_edges", 0)
+            await ctx.info(f"Successfully retrieved {total_edges} edges for concept '{term}' (verbose format)")
+            
+            return enhanced_response
+        else:
+            # Return minimal format optimized for LLMs
+            minimal_response = processor.create_minimal_concept_response(
+                processed_response, term
+            )
+            
+            total_relationships = minimal_response.get("summary", {}).get("total_relationships", 0)
+            await ctx.info(f"Successfully retrieved {total_relationships} relationships for concept '{term}' (minimal format)")
+            
+            return minimal_response
         
     except MCPValidationError as e:
         # Handle validation errors specifically

@@ -139,6 +139,7 @@ https://conceptnet-mcp-server.your-subdomain.workers.dev/tools
 
 ### Example MCP Client Usage
 
+#### Minimal Format (Default)
 ```json
 POST /mcp
 Content-Type: application/json
@@ -151,7 +152,29 @@ Content-Type: application/json
     "name": "concept_lookup",
     "arguments": {
       "term": "artificial intelligence",
-      "language": "en"
+      "language": "en",
+      "verbose": false
+    }
+  }
+}
+```
+
+#### Verbose Format
+```json
+POST /mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "related_concepts",
+    "arguments": {
+      "term": "machine learning",
+      "language": "en",
+      "limit": 100,
+      "verbose": true
     }
   }
 }
@@ -163,16 +186,36 @@ Content-Type: application/json
 # List available tools
 curl https://your-worker.workers.dev/tools
 
-# Call a tool
+# Call a tool with minimal format (default)
 curl -X POST https://your-worker.workers.dev/mcp \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
     "id": 1,
-    "method": "tools/call", 
+    "method": "tools/call",
     "params": {
       "name": "concept_lookup",
-      "arguments": {"term": "dog"}
+      "arguments": {
+        "term": "dog",
+        "verbose": false
+      }
+    }
+  }'
+
+# Call a tool with verbose format
+curl -X POST https://your-worker.workers.dev/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "concept_relatedness",
+      "arguments": {
+        "concept1": "dog",
+        "concept2": "cat",
+        "verbose": true
+      }
     }
   }'
 ```
@@ -196,12 +239,102 @@ The server supports both MCP transports:
 
 ## Available Tools
 
-The server provides four ConceptNet tools:
+The server provides four ConceptNet tools with support for two output formats:
 
 1. **`concept_lookup`**: Look up all relationships for a concept
-2. **`concept_query`**: Advanced filtered searching with multiple parameters  
-3. **`related_concepts`**: Find semantically similar concepts
+2. **`concept_query`**: Advanced filtered searching with multiple parameters
+3. **`related_concepts`**: Find semantically similar concepts (default limit: 100)
 4. **`concept_relatedness`**: Calculate precise similarity scores between concepts
+
+## Output Formats
+
+All tools support two output formats for optimal performance and cost efficiency:
+
+### Minimal Format (Default - Recommended)
+- **Size**: ~96% smaller than verbose format
+- **Optimized**: Designed specifically for LLM consumption and API efficiency
+- **Content**: Essential data only - concepts, relationships, similarity scores
+- **Performance**: Faster processing, reduced bandwidth, and lower API costs
+- **Usage**: Perfect for most AI applications and edge deployments
+
+### Verbose Format (Legacy)
+- **Size**: Full ConceptNet response data
+- **Content**: Complete metadata, statistics, analysis, and original API responses
+- **Usage**: Detailed analysis, debugging, or when full context is needed
+- **Backward Compatibility**: Maintains compatibility with existing integrations
+
+### Setting the Format
+
+All tools accept a `verbose` parameter in their arguments:
+
+#### Minimal Format Example (Default)
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "concept_lookup",
+    "arguments": {
+      "term": "artificial intelligence",
+      "language": "en",
+      "verbose": false
+    }
+  }
+}
+```
+
+#### Verbose Format Example
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "related_concepts",
+    "arguments": {
+      "term": "machine learning",
+      "language": "en",
+      "limit": 100,
+      "verbose": true
+    }
+  }
+}
+```
+
+### Tool Parameters
+
+#### concept_lookup
+- `term` (required): The concept to look up
+- `language` (default: "en"): Language code
+- `limit_results` (default: false): Limit to first 20 results
+- `target_language` (optional): Filter to specific target language
+- `verbose` (default: false): Return detailed format vs minimal format
+
+#### concept_query
+- `start` (optional): Start concept of relationships
+- `end` (optional): End concept of relationships
+- `rel` (optional): Relation type
+- `node` (optional): Concept that must be start or end
+- `other` (optional): Used with node parameter
+- `sources` (optional): Filter by data source
+- `language` (default: "en"): Language filter
+- `limit_results` (default: false): Limit to first page of results
+- `verbose` (default: false): Return detailed format vs minimal format
+
+#### related_concepts
+- `term` (required): The concept to find related concepts for
+- `language` (default: "en"): Language code
+- `filter_language` (optional): Filter results to this language
+- `limit` (default: 100, max: 100): Maximum number of results
+- `verbose` (default: false): Return detailed format vs minimal format
+
+#### concept_relatedness
+- `concept1` (required): First concept for comparison
+- `concept2` (required): Second concept for comparison
+- `language1` (default: "en"): Language for first concept
+- `language2` (default: "en"): Language for second concept
+- `verbose` (default: false): Return detailed format vs minimal format
 
 ## Monitoring
 

@@ -20,7 +20,8 @@ async def concept_relatedness(
     concept2: str,
     ctx: Context,
     language1: str = "en",
-    language2: str = "en"
+    language2: str = "en",
+    verbose: bool = False
 ) -> Dict[str, Any]:
 ```
 
@@ -33,6 +34,26 @@ async def concept_relatedness(
 | `ctx` | `Context` | Required | FastMCP context for logging and progress reporting |
 | `language1` | `str` | `"en"` | Language code for first concept (ISO 639-1 format) |
 | `language2` | `str` | `"en"` | Language code for second concept (ISO 639-1 format) |
+| `verbose` | `bool` | `False` | Output format: `False` for minimal (LLM-optimized), `True` for full ConceptNet format |
+
+## Output Formats
+
+The tool supports two output formats controlled by the `verbose` parameter:
+
+- **`verbose=false` (default)**: Returns minimal format (~96% smaller, LLM-optimized)
+- **`verbose=true`**: Returns full ConceptNet response format with complete metadata
+
+### Minimal Format (verbose=false)
+```json
+{
+  "concept1": "dog",
+  "concept2": "cat",
+  "relatedness_score": 0.558,
+  "description": "moderate"
+}
+```
+
+### Verbose Format (verbose=true)
 
 ## Response Structure
 

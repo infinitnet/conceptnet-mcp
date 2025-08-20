@@ -137,21 +137,22 @@ class MCPProtocol:
         return {
             "concept_lookup": {
                 "name": "concept_lookup",
-                "description": "Look up information about a specific concept in ConceptNet",
+                "description": "Look up information about a specific concept in ConceptNet. Returns minimal format (~96% smaller) by default or verbose format with full metadata when verbose=true.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "term": {"type": "string", "description": "The concept term to look up"},
                         "language": {"type": "string", "default": "en", "description": "Language code"},
-                        "limit_results": {"type": "boolean", "default": False, "description": "Limit to 20 results"},
-                        "target_language": {"type": "string", "description": "Filter to specific target language"}
+                        "limit_results": {"type": "boolean", "default": False, "description": "Limit to first page of results"},
+                        "target_language": {"type": "string", "description": "Filter to specific target language"},
+                        "verbose": {"type": "boolean", "default": False, "description": "Return detailed format with full metadata (default: false for minimal format)"}
                     },
                     "required": ["term"]
                 }
             },
             "concept_query": {
                 "name": "concept_query",
-                "description": "Advanced querying of ConceptNet with multi-parameter filtering",
+                "description": "Advanced querying of ConceptNet with multi-parameter filtering. Returns minimal format (~96% smaller) by default or verbose format with full metadata when verbose=true.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -162,35 +163,38 @@ class MCPProtocol:
                         "other": {"type": "string", "description": "Used with node parameter"},
                         "sources": {"type": "string", "description": "Filter by data source"},
                         "language": {"type": "string", "default": "en", "description": "Language filter"},
-                        "limit_results": {"type": "boolean", "default": False, "description": "Limit to 20 results"}
+                        "limit_results": {"type": "boolean", "default": False, "description": "Limit to first page of results"},
+                        "verbose": {"type": "boolean", "default": False, "description": "Return detailed format with full metadata (default: false for minimal format)"}
                     },
                     "required": []
                 }
             },
             "related_concepts": {
                 "name": "related_concepts",
-                "description": "Find concepts semantically related to a given concept",
+                "description": "Find concepts semantically related to a given concept. Returns minimal format (~96% smaller) by default or verbose format with full metadata when verbose=true.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "term": {"type": "string", "description": "The concept term to find related concepts for"},
                         "language": {"type": "string", "default": "en", "description": "Language code"},
                         "filter_language": {"type": "string", "description": "Filter results to this language"},
-                        "limit": {"type": "integer", "default": 20, "description": "Maximum number of results"}
+                        "limit": {"type": "integer", "default": 100, "description": "Maximum number of results (default: 100, max: 100)"},
+                        "verbose": {"type": "boolean", "default": False, "description": "Return detailed format with full metadata (default: false for minimal format)"}
                     },
                     "required": ["term"]
                 }
             },
             "concept_relatedness": {
                 "name": "concept_relatedness",
-                "description": "Calculate semantic relatedness score between two concepts",
+                "description": "Calculate semantic relatedness score between two concepts. Returns minimal format (~96% smaller) by default or verbose format with full metadata when verbose=true.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "concept1": {"type": "string", "description": "First concept for comparison"},
                         "concept2": {"type": "string", "description": "Second concept for comparison"},
                         "language1": {"type": "string", "default": "en", "description": "Language for first concept"},
-                        "language2": {"type": "string", "default": "en", "description": "Language for second concept"}
+                        "language2": {"type": "string", "default": "en", "description": "Language for second concept"},
+                        "verbose": {"type": "boolean", "default": False, "description": "Return detailed format with full metadata (default: false for minimal format)"}
                     },
                     "required": ["concept1", "concept2"]
                 }
@@ -259,9 +263,10 @@ class MCPProtocol:
                 "isError": True
             }
     
-    async def _concept_lookup(self, term: str, language: str = "en", 
-                            limit_results: bool = False, 
-                            target_language: Optional[str] = None) -> Dict[str, Any]:
+    async def _concept_lookup(self, term: str, language: str = "en",
+                            limit_results: bool = False,
+                            target_language: Optional[str] = None,
+                            verbose: bool = False) -> Dict[str, Any]:
         """Implement concept lookup tool."""
         endpoint = f"/c/{language}/{normalize_concept_text(term, language)}"
         params = {}
@@ -282,8 +287,8 @@ class MCPProtocol:
         return response_data
     
     async def _concept_query(self, start=None, end=None, rel=None, node=None,
-                           other=None, sources=None, language="en", 
-                           limit_results=False) -> Dict[str, Any]:
+                           other=None, sources=None, language="en",
+                           limit_results=False, verbose=False) -> Dict[str, Any]:
         """Implement concept query tool."""
         params = {}
         
@@ -315,7 +320,7 @@ class MCPProtocol:
     
     async def _related_concepts(self, term: str, language: str = "en",
                               filter_language: Optional[str] = None,
-                              limit: int = 20) -> Dict[str, Any]:
+                              limit: int = 100, verbose: bool = False) -> Dict[str, Any]:
         """Implement related concepts tool."""
         normalized_term = normalize_concept_text(term, language)
         endpoint = f"/related/c/{language}/{normalized_term}"
@@ -335,8 +340,8 @@ class MCPProtocol:
         return response_data
     
     async def _concept_relatedness(self, concept1: str, concept2: str,
-                                 language1: str = "en", 
-                                 language2: str = "en") -> Dict[str, Any]:
+                                 language1: str = "en",
+                                 language2: str = "en", verbose: bool = False) -> Dict[str, Any]:
         """Implement concept relatedness tool."""
         uri1 = f"/c/{language1}/{normalize_concept_text(concept1, language1)}"
         uri2 = f"/c/{language2}/{normalize_concept_text(concept2, language2)}"

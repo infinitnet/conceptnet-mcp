@@ -12,7 +12,8 @@ async def concept_query(
     ctx: Context,
     language: str = "en",
     limit: int = 20,
-    offset: int = 0
+    offset: int = 0,
+    verbose: bool = False
 ) -> Dict[str, Any]:
 ```
 
@@ -25,6 +26,26 @@ async def concept_query(
 | `language` | `str` | `"en"` | Language code for search results (ISO 639-1 format) |
 | `limit` | `int` | `20` | Maximum number of results (1-100) |
 | `offset` | `int` | `0` | Number of results to skip for pagination |
+| `verbose` | `bool` | `False` | Output format: `False` for minimal (LLM-optimized), `True` for full ConceptNet format |
+
+## Output Formats
+
+The tool supports two output formats controlled by the `verbose` parameter:
+
+- **`verbose=false` (default)**: Returns minimal format (~96% smaller, LLM-optimized)
+- **`verbose=true`**: Returns full ConceptNet response format with complete metadata
+
+### Minimal Format (verbose=false)
+```json
+{
+  "query": "animal",
+  "concepts": ["dog", "cat", "bird", "fish", "horse"],
+  "total_found": 1500,
+  "has_more": true
+}
+```
+
+### Verbose Format (verbose=true)
 
 ## Response Structure
 

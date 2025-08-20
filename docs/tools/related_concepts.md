@@ -11,7 +11,8 @@ async def related_concepts(
     concept: str,
     ctx: Context,
     language: str = "en",
-    limit: int = 10
+    limit: int = 100,
+    verbose: bool = False
 ) -> Dict[str, Any]:
 ```
 
@@ -22,7 +23,30 @@ async def related_concepts(
 | `concept` | `str` | Required | Source concept to find relationships for (e.g., "dog", "happiness") |
 | `ctx` | `Context` | Required | FastMCP context for logging and progress reporting |
 | `language` | `str` | `"en"` | Language code for the concept (ISO 639-1 format) |
-| `limit` | `int` | `10` | Maximum number of related concepts to return (1-50) |
+| `limit` | `int` | `100` | Maximum number of related concepts to return (1-100) |
+| `verbose` | `bool` | `False` | Output format: `False` for minimal (LLM-optimized), `True` for full ConceptNet format |
+
+## Output Formats
+
+The tool supports two output formats controlled by the `verbose` parameter:
+
+- **`verbose=false` (default)**: Returns minimal format (~96% smaller, LLM-optimized)
+- **`verbose=true`**: Returns full ConceptNet response format with complete metadata
+
+### Minimal Format (verbose=false)
+```json
+{
+  "concept": "dog",
+  "related": [
+    {"concept": "cat", "relation": "SimilarTo", "weight": 7.8},
+    {"concept": "animal", "relation": "IsA", "weight": 8.5},
+    {"concept": "pet", "relation": "IsA", "weight": 6.9}
+  ],
+  "total_found": 150
+}
+```
+
+### Verbose Format (verbose=true)
 
 ## Response Structure
 
