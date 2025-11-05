@@ -2,6 +2,10 @@
 
 A Model Context Protocol (MCP) server that provides seamless access to the ConceptNet knowledge graph through FastMCP framework.
 
+<a href="https://glama.ai/mcp/servers/@infinitnet/conceptnet-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@infinitnet/conceptnet-mcp/badge" alt="ConceptNet Server MCP server" />
+</a>
+
 [![CI](https://github.com/infinitnet/conceptnet-mcp/workflows/CI/badge.svg)](https://github.com/infinitnet/conceptnet-mcp/actions/workflows/ci.yml)
 [![Release](https://github.com/infinitnet/conceptnet-mcp/workflows/Release/badge.svg)](https://github.com/infinitnet/conceptnet-mcp/actions/workflows/release.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
