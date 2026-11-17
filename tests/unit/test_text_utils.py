@@ -9,7 +9,7 @@ import pytest
 import unicodedata
 from unittest.mock import patch
 
-from src.conceptnet_mcp.utils.text_utils import (
+from conceptnet_mcp.utils.text_utils import (
     normalize_concept_text,
     construct_concept_uri,
     parse_concept_uri,
@@ -45,7 +45,7 @@ from src.conceptnet_mcp.utils.text_utils import (
     MAX_URI_LENGTH,
     MAX_TEXT_LENGTH,
 )
-from src.conceptnet_mcp.utils.exceptions import (
+from conceptnet_mcp.utils.exceptions import (
     InvalidConceptURIError,
     InvalidLanguageError,
     ValidationError,
@@ -775,7 +775,7 @@ class TestCachingBehavior:
         validate_language_code("en")
         validate_language_code("en")  # Second call uses cache
     
-    @patch('src.conceptnet_mcp.utils.text_utils.normalize_concept_text.cache_info')
+    @patch('conceptnet_mcp.utils.text_utils.normalize_concept_text.cache_info')
     def test_cache_statistics(self, mock_cache_info):
         """Test that cache statistics are available."""
         mock_cache_info.return_value = type('CacheInfo', (), {

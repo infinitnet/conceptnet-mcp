@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 # Test basic imports from the utils package that we know exist
-from src.conceptnet_mcp.utils import (
+from conceptnet_mcp.utils import (
     # Exception classes
     ConceptNetMCPError,
     ConceptNetAPIError,
@@ -171,7 +171,7 @@ class TestImports:
 class TestSetupLoggingForEnvironment:
     """Test the setup_logging_for_environment convenience function."""
     
-    @patch('src.conceptnet_mcp.utils.setup_development_logging')
+    @patch('conceptnet_mcp.utils.setup_development_logging')
     def test_development_environment(self, mock_dev_logging):
         """Test development environment setup."""
         mock_dev_logging.return_value = {"result": "dev_config"}
@@ -181,7 +181,7 @@ class TestSetupLoggingForEnvironment:
         mock_dev_logging.assert_called_once()
         assert result == {"result": "dev_config"}
     
-    @patch('src.conceptnet_mcp.utils.setup_production_logging')
+    @patch('conceptnet_mcp.utils.setup_production_logging')
     def test_production_environment(self, mock_prod_logging):
         """Test production environment setup."""
         mock_prod_logging.return_value = {"result": "prod_config"}
@@ -251,7 +251,7 @@ class TestModuleStructure:
     
     def test_all_exports_defined(self):
         """Test that __all__ is defined and contains all exports."""
-        import src.conceptnet_mcp.utils as utils_module
+        import conceptnet_mcp.utils as utils_module
         
         # Should have __all__ defined
         assert hasattr(utils_module, '__all__')
@@ -266,7 +266,7 @@ class TestModuleStructure:
     
     def test_module_docstring(self):
         """Test that the module has proper documentation."""
-        import src.conceptnet_mcp.utils as utils_module
+        import conceptnet_mcp.utils as utils_module
         
         assert utils_module.__doc__ is not None
         assert len(utils_module.__doc__.strip()) > 0
@@ -278,9 +278,9 @@ class TestBackwardCompatibility:
     def test_old_import_paths_work(self):
         """Test that old import paths still work."""
         # These should all work without errors
-        from src.conceptnet_mcp.utils.exceptions import ConceptNetMCPError
-        from src.conceptnet_mcp.utils.logging import get_logger
-        from src.conceptnet_mcp.utils.text_utils import normalize_concept_text
+        from conceptnet_mcp.utils.exceptions import ConceptNetMCPError
+        from conceptnet_mcp.utils.logging import get_logger
+        from conceptnet_mcp.utils.text_utils import normalize_concept_text
         
         assert ConceptNetMCPError is not None
         assert callable(get_logger)

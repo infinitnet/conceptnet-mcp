@@ -112,7 +112,7 @@ class JSONFormatter(logging.Formatter):
         for field_name, field_value in self.extra_fields.items():
             log_entry[field_name] = field_value
         
-        return json.dumps(log_entry, ensure_ascii=False, separators=(',', ':'))
+        return json.dumps(log_entry, ensure_ascii=False, separators=(",", ":"), default=str)
 
 
 class MCPFormatter(logging.Formatter):
@@ -345,7 +345,7 @@ class RequestLogger:
             'request_id': request_id,
             'tool_name': tool_name,
             'user_id': user_id,
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             **context
         })
     
@@ -671,7 +671,7 @@ def configure_logging(
             'class': 'logging.StreamHandler',
             'level': level.upper(),
             'formatter': console_formatter,
-            'stream': 'ext://sys.stdout'
+            'stream': 'ext://sys.stderr'
         }
         config['loggers']['conceptnet_mcp']['handlers'].append('console')
     

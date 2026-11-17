@@ -9,7 +9,7 @@ import pytest
 import sys
 from unittest.mock import patch
 
-from src.conceptnet_mcp.utils.exceptions import (
+from conceptnet_mcp.utils.exceptions import (
     ConceptNetMCPError,
     ConceptNetAPIError,
     ConceptNotFoundError,
@@ -423,7 +423,7 @@ class TestUtilityFunctions:
         error = create_validation_error("field", "value", "string format")
         assert error.expected == "string format"
     
-    @patch('src.conceptnet_mcp.utils.exceptions.logging')
+    @patch('conceptnet_mcp.utils.exceptions.logging')
     def test_create_api_error_from_response(self, mock_logging):
         """Test API error creation from response."""
         # Mock response object

@@ -13,11 +13,6 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
-# Add the src directory to Python path for imports
-test_dir = Path(__file__).parent
-project_root = test_dir.parent
-src_dir = project_root / "src"
-sys.path.insert(0, str(src_dir))
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -26,15 +21,6 @@ def setup_test_environment():
     # Ensure clean logging state
     logging.getLogger().handlers.clear()
     logging.basicConfig(level=logging.WARNING)  # Reduce test noise
-    
-    # Clear any existing module caches that might interfere
-    modules_to_clear = [
-        mod for mod in sys.modules.keys() 
-        if mod.startswith('src.conceptnet_mcp.utils')
-    ]
-    for mod in modules_to_clear:
-        if mod in sys.modules:
-            del sys.modules[mod]
     
     yield
     
@@ -157,7 +143,7 @@ def clean_cache():
     """Clear function caches before and after tests."""
     # Import the modules to clear their caches
     try:
-        from src.conceptnet_mcp.utils.text_utils import normalize_concept_text, validate_language_code
+        from conceptnet_mcp.utils.text_utils import normalize_concept_text, validate_language_code
         
         # Clear caches before test
         if hasattr(normalize_concept_text, 'cache_clear'):
@@ -181,7 +167,7 @@ def clean_cache():
 @pytest.fixture
 def exception_samples():
     """Provide sample exceptions for testing."""
-    from src.conceptnet_mcp.utils.exceptions import (
+    from conceptnet_mcp.utils.exceptions import (
         ConceptNetMCPError,
         ConceptNotFoundError,
         InvalidConceptURIError,

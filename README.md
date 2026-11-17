@@ -7,9 +7,9 @@
 
 A Model Context Protocol (MCP) server that provides seamless access to the ConceptNet knowledge graph through FastMCP framework.
 
-[![CI](https://github.com/infinitnet/conceptnet-mcp/workflows/CI/badge.svg)](https://github.com/infinitnet/conceptnet-mcp/actions/workflows/ci.yml)
-[![Release](https://github.com/infinitnet/conceptnet-mcp/workflows/Release/badge.svg)](https://github.com/infinitnet/conceptnet-mcp/actions/workflows/release.yml)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![CI](https://github.com/infinitnet/conceptnet-mcp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/infinitnet/conceptnet-mcp/actions/workflows/ci.yml)
+[![Release](https://github.com/infinitnet/conceptnet-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/infinitnet/conceptnet-mcp/actions/workflows/release.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ## Overview
@@ -431,7 +431,7 @@ conceptnet_mcp/
 1. Fork the repository: https://github.com/infinitnet/conceptnet-mcp
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes and add tests
-4. Run the test suite: `python run_tests.py`
+4. Run the test suite: `pytest`
 5. Submit a pull request
 
 ### Guidelines

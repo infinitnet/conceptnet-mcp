@@ -100,10 +100,10 @@ run_tests() {
     echo -e "${BLUE}🧪 Running tests...${NC}"
     
     # Check if there are any tests to run
-    if [ -f "$PROJECT_ROOT/run_tests.py" ]; then
+    if [ -d "$PROJECT_ROOT/tests" ]; then
         echo "Running ConceptNet MCP tests..."
         cd "$PROJECT_ROOT"
-        python run_tests.py || {
+        python -m pytest -q --no-cov || {
             echo -e "${YELLOW}⚠️  Tests failed, but continuing with deployment${NC}"
         }
         cd "$SCRIPT_DIR"

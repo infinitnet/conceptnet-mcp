@@ -6,6 +6,7 @@ Model Context Protocol server. It provides access to ConceptNet's
 knowledge graph through four powerful MCP tools.
 """
 
+import argparse
 import asyncio
 from typing import Any, Dict, Optional
 import fastmcp
@@ -96,7 +97,6 @@ mcp = FastMCP(
     - `related_concepts("happiness")` - Find concepts similar to happiness
     - `concept_relatedness("cat", "dog")` - How similar are cats and dogs?
     """,
-    include_tags={"conceptnet", "knowledge", "semantic", "nlp"}
 )
 
 # Global error handler for server-level exceptions
@@ -511,5 +511,23 @@ def run_stdio_server():
     logger.info("📡 Starting stdio transport mode for desktop clients")
     main(transport="stdio")
 
+def _parse_args(argv: Optional[list] = None) -> argparse.Namespace:
+    """Parse command line arguments for the server entry point."""
+    parser = argparse.ArgumentParser(
+        prog="conceptnet-mcp",
+        description="ConceptNet MCP server (stdio by default, HTTP optional).",
+    )
+    parser.add_argument("--transport", choices=["stdio", "http"], default="stdio", help="Transport to serve (default: stdio)")
+    parser.add_argument("--host", default="localhost", help="HTTP host (default: localhost)")
+    parser.add_argument("--port", type=int, default=3001, help="HTTP port (default: 3001)")
+    return parser.parse_args(argv)
+
+
+def cli() -> None:
+    """Command line entry point."""
+    args = _parse_args()
+    main(transport=args.transport, host=args.host, port=args.port)
+
+
 if __name__ == "__main__":
-    main()
+    cli()
